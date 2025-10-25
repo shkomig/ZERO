@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zero Agent</title>
+</head>
+<body>
+    <h1>💬 Chat with Zero</h1>
+    <input id="question" placeholder="Ask something..." />
+    <button onclick="ask()">Ask Zero</button>
+    <div id="answer"></div>
+
+    <script>
+    async function ask() {
+        const question = document.getElementById('question').value;
+        
+        const response = await fetch('http://localhost:8080/api/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: question})
+        });
+        
+        const data = await response.json();
+        document.getElementById('answer').innerText = data.response;
+    }
+    </script>
+</body>
+</html>

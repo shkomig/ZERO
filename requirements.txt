@@ -1,0 +1,29 @@
+# Zero Agent - Requirements
+# ===========================
+
+# Core LLM
+requests>=2.31.0
+
+# API Server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+pydantic>=2.0.0
+
+# Google APIs (Gmail, Calendar)
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+google-api-python-client>=2.100.0
+
+# Database
+# Uncomment if using PostgreSQL or MySQL:
+# psycopg2-binary>=2.9.9  # PostgreSQL
+# mysql-connector-python>=8.2.0  # MySQL
+
+# Memory & RAG (optional)
+# numpy>=1.24.0
+# sentence-transformers>=2.2.2
+
+# Timezone support
+pytz>=2023.3

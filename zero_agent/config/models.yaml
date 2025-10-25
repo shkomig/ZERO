@@ -1,0 +1,81 @@
+models:
+  cloud:
+    claude-sonnet-3.5:
+      provider: anthropic
+      model_name: claude-3-5-sonnet-20241022
+      max_tokens: 8000
+      temperature: 0.7
+      specialties:
+        - planning
+        - complex_reasoning
+        - orchestration
+      speed: 7
+      quality: 10
+      cost: 3.0
+      context_window: 200000
+      
+  local:
+    deepseek-r1-32b:
+      provider: ollama
+      model_name: deepseek-r1:32b
+      temperature: 0.3
+      specialties:
+        - reasoning
+        - math
+        - logic
+        - analysis
+      speed: 5
+      quality: 9
+      cost: 0.0
+      context_window: 32000
+      
+    llama-3.1-8b:
+      provider: ollama
+      model_name: llama3.1:8b
+      temperature: 0.7
+      specialties:
+        - quick_tasks
+        - chat
+        - classification
+        - simple_queries
+      speed: 9
+      quality: 7
+      cost: 0.0
+      context_window: 8000
+      
+    qwen-2.5-coder-32b:
+      provider: ollama
+      model_name: qwen2.5-coder:32b
+      temperature: 0.2
+      specialties:
+        - coding
+        - debugging
+        - code_review
+        - code_generation
+      speed: 6
+      quality: 9
+      cost: 0.0
+      context_window: 32000
+
+routing:
+  default_strategy: quality  # Options: speed, quality, cost
+  fallback_model: llama-3.1-8b
+  max_retries: 3
+  timeout_seconds: 120
+  
+  task_routing:
+    planning:
+      - deepseek-r1-32b
+    coding:
+      - qwen-2.5-coder-32b
+    reasoning:
+      - deepseek-r1-32b
+    quick_response:
+      - llama-3.1-8b
+    complex_analysis:
+      - deepseek-r1-32b
+    general:
+      - llama-3.1-8b
+    understanding task requirements:
+      - llama-3.1-8b
+

@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero Agent - ממשק משולב</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            margin: 5px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-item .icon {
+            font-size: 20px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .search-bar:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .content-area {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: fadeIn 0.3s;
+        }
+
+        .content-area.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .content-area h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.zero {
+            background: white;
+            border: 2px solid #e0e0e0;
+        }
+
+        .message-header {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        .send-btn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+
+        /* Code Editor */
+        .code-editor {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .code-toolbar {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-run-btn {
+            padding: 8px 20px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .code-editor textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 20px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        /* Email Interface */
+        .email-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .email-item {
+            padding: 20px;
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .email-item:hover {
+            border-color: #667eea;
+            transform: translateX(-5px);
+        }
+
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .email-from {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .email-date {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .email-subject {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .email-preview {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Calendar */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .calendar-day:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .calendar-day.today {
+            background: #667eea;
+            color: white;
+            border-color: #5568d3;
+        }
+
+        .day-number {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* Database */
+        .query-editor {
+            margin-bottom: 20px;
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            min-height: 150px;
+            margin-bottom: 10px;
+        }
+
+        .execute-btn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .result-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: right;
+        }
+
+        .result-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        /* Memory */
+        .memory-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 80px;
+                padding: 10px;
+            }
+
+            .logo h1, .nav-item span {
+                display: none;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>🚀 Zero</h1>
+                <p>AI Agent Platform</p>
+            </div>
+
+            <div class="nav-item active" onclick="showContent('chat')">
+                <span class="icon">💬</span>
+                <span>צ'אט</span>
+            </div>
+            <div class="nav-item" onclick="showContent('code')">
+                <span class="icon">💻</span>
+                <span>קוד</span>
+            </div>
+            <div class="nav-item" onclick="showContent('email')">
+                <span class="icon">📧</span>
+                <span>אימייל</span>
+            </div>
+            <div class="nav-item" onclick="showContent('calendar')">
+                <span class="icon">📅</span>
+                <span>לוח שנה</span>
+            </div>
+            <div class="nav-item" onclick="showContent('database')">
+                <span class="icon">🗄️</span>
+                <span>מסד נתונים</span>
+            </div>
+            <div class="nav-item" onclick="showContent('memory')">
+                <span class="icon">🧠</span>
+                <span>זיכרון</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="header">
+                <input type="text" class="search-bar" placeholder="חפש או שאל משהו..." onkeypress="handleSearch(event)">
+            </div>
+
+            <!-- Chat Interface -->
+            <div id="chat" class="content-area active">
+                <h2>💬 שיחה עם Zero</h2>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message zero">
+                            <div class="message-header">🤖 Zero Agent</div>
+                            שלום! אני Zero Agent. איך אני יכול לעזור לך היום?
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="הקלד הודעה..." onkeypress="handleChatInput(event)">
+                        <button class="send-btn" onclick="sendMessage()" id="sendBtn">שלח</button>
+                        <button class="send-btn" onclick="toggleStreaming()" id="streamBtn" style="background: #764ba2; margin-right: 10px;" title="Streaming Mode">📡 Streaming</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Editor -->
+            <div id="code" class="content-area">
+                <h2>💻 עורך קוד</h2>
+                <div class="code-editor">
+                    <div class="code-toolbar">
+                        <span>Code Editor</span>
+                        <button class="code-run-btn" onclick="runCode()">▶ הפעל</button>
+                    </div>
+                    <textarea id="codeEditor" placeholder="הכנס את הקוד שלך כאן..."># דוגמה
+def hello_zero():
+    print("שלום מ-Zero Agent!")
+    return "Code executed successfully"
+
+result = hello_zero()
+print(result)
+</textarea>
+                </div>
+                <div id="codeOutput" style="margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 10px; display: none;"></div>
+            </div>
+
+            <!-- Email -->
+            <div id="email" class="content-area">
+                <h2>📧 ניהול אימייל</h2>
+                <button class="send-btn" style="margin-bottom: 20px;" onclick="loadEmails()">🔄 טען אימיילים</button>
+                <div class="email-list" id="emailList">
+                    <div class="email-item">
+                        <div class="email-header">
+                            <span class="email-from">גוגל</span>
+                            <span class="email-date">היום 10:30</span>
+                        </div>
+                        <div class="email-subject">העדכון החדש זמין</div>
+                        <div class="email-preview">יש לך עדכון חדש בהגדרות החשבון שלך...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar -->
+            <div id="calendar" class="content-area">
+                <h2>📅 לוח שנה</h2>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+
+            <!-- Database -->
+            <div id="database" class="content-area">
+                <h2>🗄️ מסד נתונים</h2>
+                <div class="query-editor">
+                    <textarea class="query-input" placeholder="הכנס שאילתת SQL כאן...">SELECT * FROM users LIMIT 10;</textarea>
+                    <button class="execute-btn" onclick="executeQuery()">▶ הפעל שאילתה</button>
+                </div>
+                <div id="queryResults"></div>
+            </div>
+
+            <!-- Memory -->
+            <div id="memory" class="content-area">
+                <h2>🧠 זיכרון ומערכות</h2>
+                <div class="memory-stats" id="memoryStats">
+                    <div class="stat-card">
+                        <div class="stat-label">סה"כ שיחות</div>
+                        <div class="stat-value" id="memoriesCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">שיחות 24 שעות</div>
+                        <div class="stat-value" id="conversationsCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">העדפות עובד</div>
+                        <div class="stat-value" id="responsesCount">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+        let streamingMode = false;
+
+        // Navigation
+        function showContent(contentId) {
+            document.querySelectorAll('.content-area').forEach(area => {
+                area.classList.remove('active');
+            });
+            document.getElementById(contentId).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+
+            // Initialize content
+            if (contentId === 'calendar') {
+                initCalendar();
+            } else if (contentId === 'memory') {
+                loadMemoryStats();
+            }
+        }
+
+        // Chat
+        function handleChatInput(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function addMessageToChat(sender, text, id = null) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageId = id || `msg-${Date.now()}`;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.id = messageId;
+
+            if (sender === 'zero') {
+                messageDiv.innerHTML = `
+                    <div class="message-header">🤖 Zero Agent</div>
+                    ${text === 'מחפש תשובה...' ? '<span class="loading"></span>' : text}
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-header">👤 אתה</div>
+                    ${text}
+                `;
+            }
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            return messageId;
+        }
+
+        // Search
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                const query = event.target.value;
+                if (query) {
+                    showContent('chat');
+                    document.getElementById('chatInput').value = query;
+                    sendMessage();
+                }
+            }
+        }
+
+        // Code Execution
+        async function runCode() {
+            const code = document.getElementById('codeEditor').value;
+            const outputDiv = document.getElementById('codeOutput');
+
+            outputDiv.style.display = 'block';
+            outputDiv.innerHTML = '<div class="loading">מריץ קוד</div>';
+
+            try {
+                // In real implementation, you'd send this to Zero's code execution API
+                const response = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `Execute this Python code:\n\n${code}`,
+                        model: 'coder'
+                    })
+                });
+
+                const data = await response.json();
+                outputDiv.innerHTML = `
+                    <strong>פלט:</strong><br>
+                    <pre>${data.response || 'No output'}</pre>
+                    ${data.model_used ? `<div style="font-size: 11px; margin-top: 10px; opacity: 0.6;">📊 מודל: ${data.model_used}</div>` : ''}
+                `;
+            } catch (error) {
+                outputDiv.innerHTML = `<strong>שגיאה:</strong> ${error.message}`;
+            }
+        }
+
+        // Calendar
+        async function initCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+
+            // Fetch today's events
+            let events = [];
+            try {
+                const response = await fetch(`${API_URL}/api/tools/calendar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'today' })
+                });
+                const data = await response.json();
+                if (data.success && data.result) {
+                    events = Array.isArray(data.result) ? data.result : [data.result];
+                }
+            } catch (error) {
+                console.error('Failed to load calendar events:', error);
+            }
+
+            // Create a map of day to events
+            const eventsMap = new Map();
+            events.forEach(event => {
+                const eventDate = new Date(event.start || event.date);
+                const day = eventDate.getDate();
+                if (!eventsMap.has(day)) {
+                    eventsMap.set(day, []);
+                }
+                eventsMap.get(day).push(event);
+            });
+
+            // Add day headers
+            const days = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+            grid.innerHTML = '';
+
+            days.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.style.textAlign = 'center';
+                dayHeader.style.fontWeight = 'bold';
+                dayHeader.style.padding = '10px';
+                dayHeader.textContent = day;
+                grid.appendChild(dayHeader);
+            });
+
+            // Add empty cells for days before month start
+            for (let i = 0; i < (firstDay + 6) % 7; i++) {
+                const empty = document.createElement('div');
+                grid.appendChild(empty);
+            }
+
+            // Add days
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                if (day === today.getDate()) {
+                    dayDiv.classList.add('today');
+                }
+                
+                let dayContent = `<div class="day-number">${day}</div>`;
+                
+                // Add event indicators
+                if (eventsMap.has(day)) {
+                    dayContent += `<div style="font-size: 10px; margin-top: 5px; color: #667eea;">📅 ${eventsMap.get(day).length}</div>`;
+                }
+                
+                dayDiv.innerHTML = dayContent;
+                grid.appendChild(dayDiv);
+            }
+        }
+
+        // Database
+        async function executeQuery() {
+            const query = document.querySelector('.query-input').value;
+            const resultsDiv = document.getElementById('queryResults');
+
+            resultsDiv.innerHTML = '<div class="loading">מריץ שאילתה</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/tools/database`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'query',
+                        query: query
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.result) {
+                    // Display results in table
+                    let html = '<table class="result-table"><thead><tr>';
+                    if (data.result.length > 0) {
+                        Object.keys(data.result[0]).forEach(key => {
+                            html += `<th>${key}</th>`;
+                        });
+                    }
+                    html += '</tr></thead><tbody>';
+                    
+                    data.result.forEach(row => {
+                        html += '<tr>';
+                        Object.values(row).forEach(val => {
+                            html += `<td>${val}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    
+                    html += '</tbody></table>';
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `<div style="padding: 20px; background: #fff3cd; border-radius: 10px;">${data.error || 'No results'}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div style="padding: 20px; background: #f8d7da; border-radius: 10px;">שגיאה: ${error.message}</div>`;
+            }
+        }
+
+        // Memory
+        async function loadMemoryStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/memory/stats`);
+                const data = await response.json();
+
+                // Handle the response structure
+                const stats = data.stats || {};
+                
+                // Update the display with actual data
+                document.getElementById('memoriesCount').textContent = stats.total_conversations || stats.conversations || 0;
+                document.getElementById('conversationsCount').textContent = stats.conversations_24h || 0;
+                document.getElementById('responsesCount').textContent = stats.total_preferences || stats.total_facts || 0;
+                
+                // Log to console for debugging
+                console.log('Memory Stats:', stats);
+            } catch (error) {
+                console.error('Failed to load memory stats:', error);
+                // Keep the default 0 values if there's an error
+            }
+        }
+
+        // Email
+        async function loadEmails() {
+            const emailList = document.getElementById('emailList');
+            emailList.innerHTML = '<div class="loading">טוען אימיילים</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/tools/email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'recent',
+                        count: 10
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.result && Array.isArray(data.result)) {
+                    let html = '';
+                    data.result.forEach(email => {
+                        html += `
+                            <div class="email-item">
+                                <div class="email-header">
+                                    <span class="email-from">${email.from || email.sender || 'Unknown'}</span>
+                                    <span class="email-date">${email.date || ''}</span>
+                                </div>
+                                <div class="email-subject">${email.subject || 'No subject'}</div>
+                                <div class="email-preview">${(email.snippet || email.body || '').substring(0, 100)}...</div>
+                            </div>
+                        `;
+                    });
+                    emailList.innerHTML = html || '<div class="email-item"><p style="text-align:center;">אין אימיילים</p></div>';
+                } else {
+                    emailList.innerHTML = '<div class="email-item"><p>לא הצלחתי לטעון אימיילים</p></div>';
+                }
+            } catch (error) {
+                emailList.innerHTML = `
+                    <div class="email-item" style="background: #fff3cd; border-color: #ffc107;">
+                        <p style="font-weight: bold; color: #856404;">⚠️ Gmail לא מוגדר</p>
+                        <p style="font-size: 14px;">קובץ credentials.json לא נמצא</p>
+                        <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
+                        <p style="font-size: 13px; margin-bottom: 10px;"><strong>כדי לטעון אימיילים:</strong></p>
+                        <ol style="font-size: 12px; padding-right: 20px; line-height: 1.8;">
+                            <li>לך ל-<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #667eea;">Google Cloud Console</a></li>
+                            <li>צור OAuth 2.0 Client ID</li>
+                            <li>הורד את הקובץ כ-credentials.json</li>
+                            <li>שים אותו בתיקייה: C:\\AI-ALL-PRO\\ZERO\\</li>
+                        </ol>
+                        <p style="font-size: 11px; margin-top: 15px; color: #999;">
+                            📖 מדריך מפורט: פתח את הקובץ GMAIL_SETUP_GUIDE.md
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // Streaming Functions
+        function toggleStreaming() {
+            streamingMode = !streamingMode;
+            const btn = document.getElementById('streamBtn');
+            if (streamingMode) {
+                btn.style.background = '#28a745';
+                btn.textContent = '✓ Streaming ON';
+            } else {
+                btn.style.background = '#764ba2';
+                btn.textContent = '📡 Streaming';
+            }
+        }
+
+        async function sendMessage() {
+            if (streamingMode) {
+                await sendStreamingMessage();
+                return;
+            }
+
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessageToChat('user', message);
+            input.value = '';
+
+            // Add loading message
+            const loadingId = addMessageToChat('zero', 'מחפש תשובה...', 'loading');
+
+            try {
+                const response = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        use_memory: true
+                    })
+                });
+
+                const data = await response.json();
+
+                // Update loading message with actual response
+                document.getElementById(loadingId).innerHTML = `
+                    <div class="message-header">🤖 Zero Agent</div>
+                    ${data.response || data.error || 'אין תשובה'}
+                    ${data.model_used ? `<div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">📊 מודל: ${data.model_used}</div>` : ''}
+                `;
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById(loadingId).innerHTML = `
+                    <div class="message-header">❌ שגיאה</div>
+                    לא הצלחתי להתחבר לשרת. ודא שהשרת רץ ב-${API_URL}
+                `;
+            }
+        }
+
+        async function sendStreamingMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessageToChat('user', message);
+            input.value = '';
+
+            // Add streaming message
+            const streamingId = addMessageToChat('zero', '', 'streaming');
+
+            try {
+                // Note: This would connect to WebSocket when implemented
+                // For now, use regular API but show it's streaming mode
+                const response = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        use_memory: true
+                    })
+                });
+
+                const data = await response.json();
+
+                // Simulate streaming by adding text gradually
+                const text = data.response || data.error || 'אין תשובה';
+                let currentText = '';
+                let index = 0;
+
+                const streamingInterval = setInterval(() => {
+                    if (index < text.length) {
+                        currentText += text[index];
+                        document.getElementById(streamingId).innerHTML = `
+                            <div class="message-header">🤖 Zero Agent (Streaming Mode)</div>
+                            ${currentText}
+                        `;
+                        index++;
+                    } else {
+                        clearInterval(streamingInterval);
+                        document.getElementById(streamingId).innerHTML = `
+                            <div class="message-header">🤖 Zero Agent (Streaming Mode)</div>
+                            ${currentText}
+                            ${data.model_used ? `<div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">📊 מודל: ${data.model_used}</div>` : ''}
+                        `;
+                    }
+                }, 10); // 10ms per character for smooth streaming effect
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById(streamingId).innerHTML = `
+                    <div class="message-header">❌ שגיאה</div>
+                    לא הצלחתי להתחבר לשרת. ודא שהשרת רץ ב-${API_URL}
+                `;
+            }
+        }
+
+        // Cursor Integration
+        async function connectToCursor() {
+            const confirmConnect = confirm('האם אתה רוצה לחבר את Zero Agent ל-Cursor?\n\nזה יאפשר לך להשתמש ב-Zero ישירות מ-Cursor IDE.');
+            
+            if (!confirmConnect) return;
+            
+            try {
+                // Create a note for Cursor integration
+                const cursorNote = `
+# Zero Agent Integration
+
+כדי להשתמש ב-Zero Agent ב-Cursor:
+
+1. שלב את הקוד הבא ב-.cursorrules או בפרויקט שלך:
+
+\`\`\`python
+import requests
+
+def ask_zero(query):
+    """שאל את Zero Agent"""
+    response = requests.post('http://localhost:8080/api/chat', json={
+        "message": query,
+        "use_memory": True
+    })
+    return response.json()['response']
+\`\`\`
+
+2. או פשוט ציין: "ask zero" או "use zero" ב-Cursor
+
+3. Zero Agent רץ ב: http://localhost:8080
+
+---
+
+בדוק שהשרת רץ:
+\`\`\`bash
+python api_server.py
+\`\`\`
+
+ממשק אינטרנט: פתח את zero_web_interface.html
+                `;
+                
+                // Copy to clipboard (requires HTTPS or localhost)
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(cursorNote);
+                    alert('✅ הוראות חיבור ל-Cursor הועתקו ללוח!\n\nפתח קובץ חדש ב-Cursor והדבק את התוכן.');
+                } else {
+                    // Fallback: show in a modal
+                    const modal = document.createElement('div');
+                    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;padding:50px;overflow:auto;';
+                    modal.innerHTML = `
+                        <div style="background:white;padding:30px;border-radius:15px;max-width:800px;margin:0 auto;">
+                            <h2 style="color:#667eea;margin-bottom:20px;">📋 הוראות חיבור ל-Cursor</h2>
+                            <pre style="background:#f5f5f5;padding:20px;border-radius:10px;overflow:auto;max-height:500px;">${cursorNote}</pre>
+                            <button onclick="this.closest('div[style*=background]').parentElement.remove()" style="margin-top:20px;padding:12px 30px;background:#667eea;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:bold;">סגור</button>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                }
+                
+            } catch (error) {
+                alert('❌ שגיאה בהעתקת הטקסט. אנא העתק ידנית.');
+                console.error('Error:', error);
+            }
+        }
+        
+        // Add Cursor button
+        window.addEventListener('load', function() {
+            const header = document.querySelector('.header');
+            if (header) {
+                const cursorBtn = document.createElement('button');
+                cursorBtn.textContent = '🔗 חיבור ל-Cursor';
+                cursorBtn.className = 'send-btn';
+                cursorBtn.style.marginRight = '10px';
+                cursorBtn.onclick = connectToCursor;
+                header.appendChild(cursorBtn);
+            }
+        });
+
+        // Initialize
+        initCalendar();
+    </script>
+</body>
+</html>

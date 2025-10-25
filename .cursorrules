@@ -1,0 +1,14 @@
+# Zero Agent Integration
+
+When I ask to "ask zero" or "use zero", call this API:
+POST http://localhost:8080/api/chat
+
+Example Python code:
+```python
+import requests
+response = requests.post('http://localhost:8080/api/chat', 
+    json={"message": "your question here"})
+print(response.json()['response'])
+```
+
+Use this for complex questions that need AI reasoning.

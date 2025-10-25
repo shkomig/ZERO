@@ -1,0 +1,48 @@
+tools:
+  screen_capture:
+    enabled: true
+    backend_priority:
+      - windows_capture
+      - dxcam
+      - mss
+      - pyautogui
+    default_format: png
+    quality: 85
+    
+  browser:
+    enabled: true
+    browser_type: chromium
+    headless: false
+    timeout: 30
+    wait_for_load: networkidle
+    
+  git:
+    enabled: true
+    workspace_dir: ./workspace
+    default_author:
+      name: Zero Agent
+      email: zero@agent.ai
+    
+  docker:
+    enabled: true
+    auto_pull_images: true
+    default_remove: false
+    
+  system_monitor:
+    enabled: true
+    cpu_interval: 1.0
+    
+  email:
+    enabled: false
+    provider: gmail
+    credentials_file: credentials.json
+    
+permissions:
+  read_files: true
+  write_files: true
+  execute_commands: true
+  delete_files: false  # Requires confirmation
+  modify_system: false  # Requires confirmation
+  send_emails: false  # Requires confirmation
+  network_access: true
+

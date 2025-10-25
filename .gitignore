@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Zero Agent Data
+zero_agent/data/screenshots/*.png
+zero_agent/data/screenshots/*.jpg
+zero_agent/data/database/*.db
+zero_agent/data/vectors/
+zero_agent/logs/*.log
+
+# Workspace
+workspace/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+credentials.json
+token.pickle
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Documentation
+docs/_build/
+
+# Playwright
+.playwright/
+
+# Temporary
+*.tmp
+*.bak
+temp/
+
