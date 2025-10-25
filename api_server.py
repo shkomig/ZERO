@@ -100,6 +100,11 @@ class DatabaseRequest(BaseModel):
     db_path: str = "workspace/data.db"
 
 
+class ProjectReviewRequest(BaseModel):
+    project_path: str
+    review_type: str = "full"  # full, quick, security, architecture
+
+
 class ToolResponse(BaseModel):
     success: bool
     result: Any
@@ -226,6 +231,7 @@ async def root():
             "calendar": "/api/tools/calendar",
             "database": "/api/tools/database",
             "memory": "/api/memory/stats",
+            "project_review": "/api/tools/project-review",
             "websocket": "/ws/chat"
         }
     }
@@ -440,6 +446,123 @@ async def memory_clear(days: int = 30):
         return {"success": True, "message": f"Cleared memories older than {days} days"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Project Review Endpoint
+# ============================================================================
+
+@app.post("/api/tools/project-review")
+async def project_review(request: ProjectReviewRequest):
+    """
+    Professional project review and analysis
+    
+    Performs:
+    - Code quality analysis
+    - Architecture review
+    - Security assessment
+    - Best practices check
+    - Performance recommendations
+    """
+    from pathlib import Path
+    import os
+    
+    try:
+        project_path = Path(request.project_path)
+        
+        if not project_path.exists():
+            return {
+                "success": False,
+                "error": f"Project path does not exist: {project_path}"
+            }
+        
+        # Gather project information
+        project_files = []
+        file_sizes = {}
+        
+        for root, dirs, files in os.walk(project_path):
+            # Skip hidden directories and common ignore patterns
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'node_modules', 'venv']]
+            
+            for file in files:
+                if file.startswith('.'):
+                    continue
+                    
+                file_path = Path(root) / file
+                rel_path = file_path.relative_to(project_path)
+                
+                try:
+                    size = file_path.stat().st_size
+                    file_sizes[str(rel_path)] = size
+                    project_files.append(str(rel_path))
+                except:
+                    pass
+        
+        # Get project stats
+        total_files = len(project_files)
+        total_size = sum(file_sizes.values())
+        
+        # Analyze by file type
+        file_types = {}
+        for file in project_files:
+            ext = Path(file).suffix.lower()
+            if ext in file_types:
+                file_types[ext] += 1
+            else:
+                file_types[ext] = 1
+        
+        # Prepare analysis prompt for Zero
+        analysis_prompt = f"""
+נתח את הפרויקט הבא וספק חוות דעת מקצועית:
+
+**מידע על הפרויקט:**
+- נתיב: {project_path}
+- מספר קבצים: {total_files}
+- גודל כולל: {total_size / 1024 / 1024:.2f} MB
+- סוגי קבצים: {file_types}
+
+**קבצים עיקריים:**
+{chr(10).join(project_files[:50])}
+
+{'...ועוד קבצים' if len(project_files) > 50 else ''}
+
+אנא ספק:
+1. **ארכיטקטורה**: הערכת המבנה והארגון
+2. **איכות קוד**: Best practices ו-coding standards
+3. **אבטחה**: נקודות תורפה פוטנציאליות
+4. **ביצועים**: אופטימיזציות אפשריות
+5. **חזקות**: מה הפרויקט עושה טוב
+6. **שיפורים**: המלצות לקידום
+
+התייחס ספציפית לטכנולוגיות שזיהית בפרויקט.
+"""
+        
+        # Use Zero to analyze
+        if zero.initialized:
+            analysis = zero.llm.generate(analysis_prompt, model="smart")
+        else:
+            analysis = "Zero Agent not initialized. Cannot perform analysis."
+        
+        return {
+            "success": True,
+            "result": {
+                "project_path": str(project_path),
+                "stats": {
+                    "total_files": total_files,
+                    "total_size_mb": round(total_size / 1024 / 1024, 2),
+                    "file_types": file_types,
+                    "sample_files": project_files[:20]
+                },
+                "review": analysis,
+                "review_type": request.review_type
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 
 # ============================================================================

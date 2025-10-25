@@ -474,6 +474,10 @@
                 <span class="icon">🧠</span>
                 <span>זיכרון</span>
             </div>
+            <div class="nav-item" onclick="showContent('project-review')">
+                <span class="icon">🔍</span>
+                <span>סקירת פרויקט</span>
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -569,6 +573,31 @@ print(result)
                         <div class="stat-value" id="responsesCount">0</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Project Review -->
+            <div id="project-review" class="content-area">
+                <h2>🔍 סקירת פרויקט מקצועית</h2>
+                <p style="margin-bottom: 20px; color: #666;">בקש מ-Zero לנתח פרויקט ולספק חוות דעת מקצועית</p>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: bold;">נתיב הפרויקט:</label>
+                    <input type="text" id="projectPath" placeholder="למשל: C:\Projects\MyProject" 
+                           style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; margin-bottom: 15px;"
+                           value=".">
+                    
+                    <label style="display: block; margin-bottom: 10px; font-weight: bold;">סוג סקירה:</label>
+                    <select id="reviewType" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; margin-bottom: 15px;">
+                        <option value="full">סקירה מלאה</option>
+                        <option value="quick">סקירה מהירה</option>
+                        <option value="security">אבטחה</option>
+                        <option value="architecture">ארכיטקטורה</option>
+                    </select>
+                    
+                    <button class="send-btn" onclick="reviewProject()" style="width: 100%;">📊 התחל סקירה</button>
+                </div>
+
+                <div id="projectReviewResults" style="margin-top: 30px;"></div>
             </div>
         </div>
     </div>
@@ -1062,6 +1091,86 @@ python api_server.py
                 header.appendChild(cursorBtn);
             }
         });
+
+        // Project Review
+        async function reviewProject() {
+            const projectPath = document.getElementById('projectPath').value;
+            const reviewType = document.getElementById('reviewType').value;
+            const resultsDiv = document.getElementById('projectReviewResults');
+
+            if (!projectPath) {
+                alert('אנא הזן נתיב לפרויקט');
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="loading">בודק פרויקט...</div>';
+
+            try {
+                const response = await fetch(`${API_URL}/api/tools/project-review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        project_path: projectPath,
+                        review_type: reviewType
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const result = data.result;
+                    
+                    let html = `
+                        <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                            <h3 style="color: #667eea; margin-bottom: 15px;">📊 סטטיסטיקות הפרויקט</h3>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                                <div>
+                                    <div style="font-weight: bold; color: #667eea;">קבצים</div>
+                                    <div style="font-size: 24px; font-weight: bold;">${result.stats.total_files}</div>
+                                </div>
+                                <div>
+                                    <div style="font-weight: bold; color: #667eea;">גודל</div>
+                                    <div style="font-size: 24px; font-weight: bold;">${result.stats.total_size_mb} MB</div>
+                                </div>
+                                <div>
+                                    <div style="font-weight: bold; color: #667eea;">סוג סקירה</div>
+                                    <div style="font-size: 14px;">${result.review_type}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: white; padding: 25px; border-radius: 10px; border: 2px solid #e0e0e0;">
+                            <h3 style="color: #667eea; margin-bottom: 15px;">💡 חוות דעת מקצועית</h3>
+                            <div style="white-space: pre-wrap; line-height: 1.6; color: #333;">${result.review}</div>
+                        </div>
+
+                        ${result.stats.sample_files.length > 0 ? `
+                            <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                                <h4 style="color: #667eea; margin-bottom: 10px;">📁 קבצים נסרקו (דוגמה)</h4>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    ${result.stats.sample_files.map(file => `<div style="padding: 5px; font-family: monospace; font-size: 12px;">📄 ${file}</div>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 10px;">
+                            <strong>❌ שגיאה:</strong> ${data.error}
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 10px;">
+                        <strong>❌ שגיאה:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
 
         // Initialize
         initCalendar();
