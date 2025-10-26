@@ -159,6 +159,83 @@ class CodeExecutorTool:
         else:
             return f"Error: {result.get('error', result.get('stderr', 'Unknown error'))}"
     
+    def create_folder(self, path: str, **kwargs) -> Dict[str, Any]:
+        """
+        Create a folder (directory)
+        
+        Args:
+            path: Path to create
+            
+        Returns:
+            Execution result
+        """
+        try:
+            from pathlib import Path
+            
+            # Resolve path relative to workspace
+            if path.startswith('/') or (len(path) > 1 and path[1] == ':'):
+                # Absolute path
+                folder_path = Path(path)
+            else:
+                # Relative to workspace
+                folder_path = self.workspace / path
+            
+            # Create directory
+            folder_path.mkdir(parents=True, exist_ok=True)
+            
+            return {
+                "success": True,
+                "message": f"Directory created: {folder_path}",
+                "path": str(folder_path)
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def create_file(self, path: str, content: str = "", **kwargs) -> Dict[str, Any]:
+        """
+        Create a file with content
+        
+        Args:
+            path: Path to create
+            content: File content
+            
+        Returns:
+            Execution result
+        """
+        try:
+            from pathlib import Path
+            
+            # Resolve path relative to workspace
+            if path.startswith('/') or (len(path) > 1 and path[1] == ':'):
+                # Absolute path
+                file_path = Path(path)
+            else:
+                # Relative to workspace
+                file_path = self.workspace / path
+            
+            # Create parent directory if needed
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Create file
+            file_path.write_text(content, encoding='utf-8')
+            
+            return {
+                "success": True,
+                "message": f"File created: {file_path}",
+                "path": str(file_path),
+                "size": len(content)
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
     def get_info(self) -> str:
         """
         Get tool information for LLM

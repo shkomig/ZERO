@@ -255,6 +255,8 @@ class ZeroAgent:
                 if self.code_executor:
                     tools_dict['execute_python'] = self.code_executor
                     tools_dict['execute_bash'] = self.code_executor
+                    tools_dict['create_folder'] = self.code_executor
+                    tools_dict['create_file'] = self.code_executor
                 
                 self.safety_layer = SafetyLayer()
                 self.agent_orchestrator = AgentOrchestrator(

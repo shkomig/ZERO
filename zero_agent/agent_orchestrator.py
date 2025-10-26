@@ -243,8 +243,18 @@ class AgentOrchestrator:
             if task.action_type in self.tools:
                 tool = self.tools[task.action_type]
                 
-                # בצע את הפעולה
-                result = tool.execute(**task.parameters)
+                # בצע את הפעולה - יכול להיות method או execute
+                if hasattr(tool, task.action_type):
+                    # יש method עם השם הזה (למשל create_folder)
+                    method = getattr(tool, task.action_type)
+                    result = method(**task.parameters)
+                elif hasattr(tool, 'execute'):
+                    # יש method execute גנרית
+                    result = tool.execute(**task.parameters)
+                else:
+                    # אין method מתאים
+                    logger.warning(f"Tool has no method '{task.action_type}' or 'execute'")
+                    result = {"success": False, "error": "No suitable method found"}
                 
                 duration = time() - start_time
                 
