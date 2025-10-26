@@ -1,3 +1,7 @@
+# ============================================================================
+# Zero Agent - .gitignore
+# ============================================================================
+
 # Python
 __pycache__/
 *.py[cod]
@@ -19,12 +23,19 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
-ENV/
 env/
-.venv
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
 
 # IDE
 .vscode/
@@ -32,47 +43,63 @@ env/
 *.swp
 *.swo
 *~
+.DS_Store
 
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Zero Agent Data
-zero_agent/data/screenshots/*.png
-zero_agent/data/screenshots/*.jpg
-zero_agent/data/database/*.db
-zero_agent/data/vectors/
-zero_agent/logs/*.log
-
-# Workspace
+# Project Specific
 workspace/
+logs/
+*.log
+data/vectors/
+data/database/
+data/screenshots/
+
+# Memory and RAG
+memory/*.json
+!memory/__init__.py
+zero_agent/data/
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.cache
 
 # OS
-.DS_Store
 Thumbs.db
+.DS_Store
+desktop.ini
 
-# Credentials
-credentials.json
-token.pickle
-
-# Testing
+# Tests
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 
-# Jupyter
-.ipynb_checkpoints
-
-# Documentation
+# Documentation Build
 docs/_build/
+site/
 
-# Playwright
-.playwright/
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
 
-# Temporary
-*.tmp
-*.bak
-temp/
+# Secrets and Keys
+*.pem
+*.key
+credentials.json
+token.pickle
+secrets.yaml
 
+# Large Files
+*.mp4
+*.avi
+*.mov
+*.zip
+*.tar.gz
+*.rar
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+!zero_agent/data/vectors/chroma.sqlite3
