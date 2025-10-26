@@ -248,6 +248,7 @@ class ZeroAgent:
                 self.code_executor = None
         
         # Initialize Agent Orchestrator
+        print(f"[API] AGENT_ORCHESTRATOR_AVAILABLE = {AGENT_ORCHESTRATOR_AVAILABLE}")
         if AGENT_ORCHESTRATOR_AVAILABLE:
             try:
                 # Create tools dict for orchestrator
@@ -257,6 +258,7 @@ class ZeroAgent:
                     tools_dict['execute_bash'] = self.code_executor
                     tools_dict['create_folder'] = self.code_executor
                     tools_dict['create_file'] = self.code_executor
+                    print(f"[API] Tools dict created: {list(tools_dict.keys())}")
                 
                 self.safety_layer = SafetyLayer()
                 self.agent_orchestrator = AgentOrchestrator(
@@ -265,9 +267,13 @@ class ZeroAgent:
                 )
                 print("[API] OK Agent Orchestrator ready")
             except Exception as e:
+                import traceback
                 print(f"[API] WARNING Agent Orchestrator unavailable: {e}")
+                print(f"[API] Traceback: {traceback.format_exc()}")
                 self.agent_orchestrator = None
                 self.safety_layer = None
+        else:
+            print("[API] Agent Orchestrator not available (AGENT_ORCHESTRATOR_AVAILABLE = False)")
         
         self.initialized = True
         print("[API] SUCCESS Zero Agent ready!\n")
@@ -430,6 +436,9 @@ async def chat(request: ChatRequest):
             'הרץ פקודה', 'run command'
         ]
         
+        print(f"[API] Checking message: {request.message}")
+        print(f"[API] Agent Orchestrator available: {zero.agent_orchestrator is not None}")
+        
         # Check if we should use Agent Orchestrator for complex tasks
         use_orchestrator = False
         orchestrator_result = None
@@ -437,6 +446,7 @@ async def chat(request: ChatRequest):
         if zero.agent_orchestrator and any(keyword in request.message.lower() for keyword in complex_task_keywords):
             try:
                 # Use Agent Orchestrator for complex tasks
+                print(f"[API] Using Agent Orchestrator for: {request.message}")
                 use_orchestrator = True
                 orchestrator_result = zero.agent_orchestrator.execute_goal(request.message, max_iterations=5)
                 
