@@ -679,13 +679,18 @@ async def chat(request: ChatRequest, http_request: Request):
                 content = msg.get('content', '')
                 context_msgs.append(f"{role}: {content}")
             context = "\n".join(context_msgs)
+            print(f"[Context] Got {len(request.conversation_history)} messages in history")
+            print(f"[Context] Context built: {len(context)} chars")
+        else:
+            print(f"[Context] No conversation_history provided")
         
         # Fallback to old memory system if no conversation history provided
-        elif request.use_memory and zero.memory:
+        if not context and request.use_memory and zero.memory:
             context = zero.memory.build_context(
                 current_task=request.message,
                 max_length=2000
             )
+            print(f"[Context] Using old memory system: {len(context)} chars")
         
         preferences = ""
         if request.use_memory and zero.memory:
