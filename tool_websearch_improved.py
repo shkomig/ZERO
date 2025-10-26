@@ -149,6 +149,34 @@ class EnhancedWebSearchTool:
                 "query": query
             }
     
+    def fetch_content_with_jina(self, url: str) -> Optional[str]:
+        """
+        Fetch and extract clean content using Jina Reader API
+        FREE tier: 1M requests/month! Token-optimized markdown output.
+        
+        Args:
+            url: URL to fetch
+            
+        Returns:
+            Clean markdown content (LLM-optimized) or None if failed
+        """
+        try:
+            jina_url = f"https://r.jina.ai/{url}"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            response = requests.get(jina_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            # Jina returns clean markdown - perfect for LLMs!
+            # Limit to ~5000 chars (~1250 tokens) to fit in context
+            content = response.text[:5000]
+            return content if content.strip() else None
+            
+        except Exception:
+            return None
+    
     def _search_duckduckgo_html(self, query: str, max_results: int) -> List[Dict[str, Any]]:
         """DuckDuckGo HTML search"""
         try:
