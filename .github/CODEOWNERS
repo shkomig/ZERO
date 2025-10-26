@@ -1,0 +1,49 @@
+# ============================================================================
+# CODEOWNERS - Zero Agent
+# ============================================================================
+#
+# This file defines who is responsible for code reviews in different parts
+# of the repository. When a PR is opened that modifies these files, the
+# specified owners will automatically be requested for review.
+#
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @yourusername
+
+# Core system components
+/api_server.py @yourusername
+/zero_agent/core/ @yourusername
+
+# Agent system (orchestrator, task planner, safety)
+/zero_agent/agent_orchestrator.py @yourusername
+/zero_agent/safety_layer.py @yourusername
+
+# Memory and RAG system
+/memory/ @yourusername
+/zero_agent/rag/ @yourusername
+
+# Tools
+/tool_*.py @yourusername
+/zero_agent/tools/ @yourusername
+
+# Web Interface
+/zero_web_interface.html @yourusername
+/zero_agent/ui/ @yourusername
+
+# Documentation
+/docs/ @yourusername
+*.md @yourusername
+
+# Configuration
+/zero_agent/config/ @yourusername
+*.yaml @yourusername
+*.yml @yourusername
+.env.example @yourusername
+
+# Tests
+/tests/ @yourusername
+
+# CI/CD and GitHub workflows
+/.github/ @yourusername
+
