@@ -680,6 +680,164 @@
         .close-artifacts:hover {
             opacity: 1;
         }
+
+        /* Artifacts Panel - Claude Style */
+        .artifacts-panel {
+            width: 0;
+            background: var(--claude-white);
+            border-left: 1px solid var(--claude-border);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .artifacts-panel.open {
+            width: 45%;
+            min-width: 400px;
+        }
+
+        .artifacts-header {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--claude-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--claude-bg-light);
+        }
+
+        .artifacts-header h3 {
+            font-family: ui-serif, Georgia, serif;
+            color: var(--claude-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .artifacts-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-bottom: 1px solid var(--claude-border);
+            background: var(--claude-bg-light);
+        }
+
+        .artifacts-tab {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--claude-text-light);
+        }
+
+        .artifacts-tab.active {
+            background: var(--claude-primary);
+            color: var(--claude-white);
+        }
+
+        .artifacts-tab:hover:not(.active) {
+            background: var(--claude-border);
+        }
+
+        .artifacts-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-lg);
+        }
+
+        .artifacts-code {
+            background: #1e1e1e;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #d4d4d4;
+            overflow-x: auto;
+            border: 1px solid var(--claude-border);
+        }
+
+        .artifacts-preview {
+            background: var(--claude-white);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            border: 1px solid var(--claude-border);
+            min-height: 200px;
+        }
+
+        .artifacts-actions {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-top: 1px solid var(--claude-border);
+            display: flex;
+            gap: var(--spacing-sm);
+            background: var(--claude-bg-light);
+        }
+
+        .artifacts-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--claude-white);
+            border: 1px solid var(--claude-border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--claude-text);
+            transition: all 0.25s ease;
+        }
+
+        .artifacts-btn:hover {
+            background: var(--claude-primary);
+            color: var(--claude-white);
+            border-color: var(--claude-primary);
+        }
+
+        .close-panel-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--claude-text-light);
+            transition: color 0.25s ease;
+        }
+
+        .close-panel-btn:hover {
+            color: var(--claude-primary);
+        }
+
+        /* Enhanced Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: var(--spacing-md);
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--claude-primary);
+            border-radius: 50%;
+            animation: typing-bounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing-bounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -745,7 +903,12 @@
         <!-- Main Content -->
         <div class="main-content">
             <div class="header">
-                <input type="text" class="search-bar" placeholder="חפש או שאל משהו..." onkeypress="handleSearch(event)">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <input type="text" class="search-bar" placeholder="חפש או שאל משהו..." onkeypress="handleSearch(event)" style="flex: 1;">
+                    <button class="send-btn" onclick="toggleArtifactsPanel()" style="padding: 12px 20px; white-space: nowrap;">
+                        📦 Artifacts
+                    </button>
+                </div>
             </div>
 
             <!-- Chat Interface -->
@@ -888,6 +1051,36 @@ print(result)
                 <script>
                     document.addEventListener('DOMContentLoaded', loadSavedConversations);
                 </script>
+            </div>
+        </div>
+
+        <!-- Artifacts Panel -->
+        <div class="artifacts-panel" id="artifactsPanel">
+            <div class="artifacts-header">
+                <h3>📦 Artifacts</h3>
+                <button class="close-panel-btn" onclick="toggleArtifactsPanel()">✕</button>
+            </div>
+            
+            <div class="artifacts-tabs">
+                <div class="artifacts-tab active" onclick="switchArtifactsTab('preview')">תצוגה מקדימה</div>
+                <div class="artifacts-tab" onclick="switchArtifactsTab('code')">קוד</div>
+            </div>
+            
+            <div class="artifacts-body">
+                <div id="artifactsPreview" class="artifacts-preview">
+                    <p style="color: var(--claude-text-light); text-align: center; margin-top: 40px;">
+                        אין תוכן להצגה כרגע
+                    </p>
+                </div>
+                <div id="artifactsCode" class="artifacts-code" style="display: none;">
+                    <pre><code>// No code to display</code></pre>
+                </div>
+            </div>
+            
+            <div class="artifacts-actions">
+                <button class="artifacts-btn" onclick="copyArtifactCode()">📋 העתק</button>
+                <button class="artifacts-btn" onclick="downloadArtifact()">⬇️ הורד</button>
+                <button class="artifacts-btn" onclick="clearArtifacts()">🗑️ נקה</button>
             </div>
         </div>
     </div>
@@ -2107,6 +2300,95 @@ python api_server.py
                 showArtifact(language, filename, code);
                 artifactCount++;
             }
+        }
+
+        // ========================================
+        // New Artifacts Panel Functions
+        // ========================================
+        
+        let currentArtifact = { code: '', preview: '' };
+        let currentArtifactsTab = 'preview';
+        
+        function toggleArtifactsPanel() {
+            const panel = document.getElementById('artifactsPanel');
+            panel.classList.toggle('open');
+        }
+        
+        function switchArtifactsTab(tab) {
+            currentArtifactsTab = tab;
+            
+            // Update tab styles
+            document.querySelectorAll('.artifacts-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide content
+            const previewDiv = document.getElementById('artifactsPreview');
+            const codeDiv = document.getElementById('artifactsCode');
+            
+            if (tab === 'preview') {
+                previewDiv.style.display = 'block';
+                codeDiv.style.display = 'none';
+            } else {
+                previewDiv.style.display = 'none';
+                codeDiv.style.display = 'block';
+            }
+        }
+        
+        function updateArtifactsPanel(code, preview = null) {
+            currentArtifact.code = code;
+            currentArtifact.preview = preview || code;
+            
+            // Update code view
+            document.getElementById('artifactsCode').innerHTML = `<pre><code>${escapeHtml(code)}</code></pre>`;
+            
+            // Update preview
+            if (preview) {
+                document.getElementById('artifactsPreview').innerHTML = preview;
+            } else {
+                document.getElementById('artifactsPreview').innerHTML = `<pre style="white-space: pre-wrap; font-family: monospace;">${escapeHtml(code)}</pre>`;
+            }
+            
+            // Open panel if not already open
+            const panel = document.getElementById('artifactsPanel');
+            if (!panel.classList.contains('open')) {
+                panel.classList.add('open');
+            }
+        }
+        
+        function copyArtifactCode() {
+            if (!currentArtifact.code) {
+                alert('אין קוד להעתקה');
+                return;
+            }
+            
+            navigator.clipboard.writeText(currentArtifact.code).then(() => {
+                alert('✅ הקוד הועתק ללוח');
+            }).catch(err => {
+                alert('❌ שגיאה בהעתקה: ' + err);
+            });
+        }
+        
+        function downloadArtifact() {
+            if (!currentArtifact.code) {
+                alert('אין קוד להורדה');
+                return;
+            }
+            
+            const blob = new Blob([currentArtifact.code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `artifact_${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function clearArtifacts() {
+            currentArtifact = { code: '', preview: '' };
+            document.getElementById('artifactsPreview').innerHTML = '<p style="color: var(--claude-text-light); text-align: center; margin-top: 40px;">אין תוכן להצגה כרגע</p>';
+            document.getElementById('artifactsCode').innerHTML = '<pre><code>// No code to display</code></pre>';
         }
 
         // Initialize
