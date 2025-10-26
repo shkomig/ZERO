@@ -550,6 +550,91 @@
             font-size: 13px;
             color: #666;
         }
+
+        /* Artifacts Zone - Phase 3 */
+        .artifacts-zone {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(15, 22, 41, 0.6);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .artifacts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #00BFFF;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .artifact {
+            background: rgba(0, 122, 204, 0.1);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .artifact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .artifact-title {
+            font-weight: 600;
+            color: #33FFFF;
+            font-size: 13px;
+        }
+
+        .artifact-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .artifact-btn {
+            padding: 4px 10px;
+            background: rgba(0, 191, 255, 0.2);
+            border: 1px solid rgba(0, 191, 255, 0.4);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #00BFFF;
+            transition: all 0.2s;
+        }
+
+        .artifact-btn:hover {
+            background: rgba(0, 191, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .artifact-content {
+            background: rgba(10, 15, 31, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #E0F7FF;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .close-artifacts {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .close-artifacts:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -644,6 +729,14 @@
                         פתח את הממשק דרך: <code>http://localhost:8080/zero_web_interface.html</code><br>
                         או פשוט הקלד את ההודעה בשדה הטקסט ↑
                     </div>
+                </div>
+                <!-- Artifacts Zone -->
+                <div id="artifactsZone" class="artifacts-zone" style="display: none;">
+                    <div class="artifacts-header">
+                        <span>🎨 Artifacts</span>
+                        <span class="close-artifacts" onclick="closeArtifacts()">✕</span>
+                    </div>
+                    <div id="artifactsContainer"></div>
                 </div>
             </div>
 
@@ -1372,11 +1465,15 @@ print(result)
                 const data = await response.json();
 
                 // Update loading message with actual response
+                const responseText = data.response || data.error || 'אין תשובה';
                 document.getElementById(loadingId).innerHTML = `
                     <div class="message-header">🤖 Zero Agent</div>
-                    ${data.response || data.error || 'אין תשובה'}
+                    ${responseText}
                     ${getModelInfoDisplay(data.model_used, true)}
                 `;
+
+                // Auto-detect and show code artifacts
+                detectAndShowArtifacts(responseText);
 
             } catch (error) {
                 console.error('Error:', error);
@@ -1866,6 +1963,106 @@ python api_server.py
 
         // Initialize projects on load
         loadProjects();
+
+        // ========================================
+        // Artifacts System - Phase 3
+        // ========================================
+        
+        function showArtifact(type, title, content) {
+            const artifactsZone = document.getElementById('artifactsZone');
+            const container = document.getElementById('artifactsContainer');
+            
+            // Show artifacts zone
+            artifactsZone.style.display = 'block';
+            
+            // Create artifact
+            const artifact = document.createElement('div');
+            artifact.className = 'artifact';
+            artifact.dataset.type = type;
+            artifact.dataset.title = title;
+            
+            artifact.innerHTML = `
+                <div class="artifact-header">
+                    <span class="artifact-title">📄 ${title}</span>
+                    <div class="artifact-actions">
+                        <button class="artifact-btn" onclick="copyArtifact('${title}', event)">📋 העתק</button>
+                        <button class="artifact-btn" onclick="downloadArtifact('${title}', event)">💾 הורד</button>
+                        <button class="artifact-btn" onclick="removeArtifact(event)">🗑️ מחק</button>
+                    </div>
+                </div>
+                <div class="artifact-content">${escapeHtml(content)}</div>
+            `;
+            
+            // Add to container
+            container.insertBefore(artifact, container.firstChild);
+            
+            // Scroll to top
+            artifactsZone.scrollTop = 0;
+        }
+        
+        function closeArtifacts() {
+            document.getElementById('artifactsZone').style.display = 'none';
+        }
+        
+        function copyArtifact(title, event) {
+            event.stopPropagation();
+            const artifact = event.target.closest('.artifact');
+            const content = artifact.querySelector('.artifact-content').textContent;
+            
+            navigator.clipboard.writeText(content).then(() => {
+                alert(`✅ הועתק: ${title}`);
+            });
+        }
+        
+        function downloadArtifact(title, event) {
+            event.stopPropagation();
+            const artifact = event.target.closest('.artifact');
+            const content = artifact.querySelector('.artifact-content').textContent;
+            
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = title;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function removeArtifact(event) {
+            event.stopPropagation();
+            const artifact = event.target.closest('.artifact');
+            artifact.remove();
+            
+            // Hide artifacts zone if empty
+            const container = document.getElementById('artifactsContainer');
+            if (container.children.length === 0) {
+                closeArtifacts();
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Auto-detect code blocks in Zero responses
+        function detectAndShowArtifacts(messageText) {
+            // Detect code blocks
+            const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+            let match;
+            let artifactCount = 0;
+            
+            while ((match = codeBlockRegex.exec(messageText)) !== null) {
+                const language = match[1] || 'code';
+                const code = match[2];
+                const extension = language === 'python' ? 'py' : language === 'javascript' ? 'js' : 'txt';
+                const filename = `artifact_${Date.now()}_${artifactCount}.${extension}`;
+                
+                showArtifact(language, filename, code);
+                artifactCount++;
+            }
+        }
 
         // Initialize
         initCalendar();
