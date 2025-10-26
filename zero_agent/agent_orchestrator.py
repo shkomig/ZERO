@@ -240,6 +240,9 @@ class AgentOrchestrator:
         
         try:
             # בדוק אם יש tool מתאים
+            logger.info(f"Checking tools for action_type: {task.action_type}")
+            logger.info(f"Available tools: {list(self.tools.keys())}")
+            
             if task.action_type in self.tools:
                 tool = self.tools[task.action_type]
                 
@@ -248,9 +251,11 @@ class AgentOrchestrator:
                     # יש method עם השם הזה (למשל create_folder)
                     method = getattr(tool, task.action_type)
                     result = method(**task.parameters)
+                    logger.info(f"Tool method '{task.action_type}' executed: {result}")
                 elif hasattr(tool, 'execute'):
                     # יש method execute גנרית
                     result = tool.execute(**task.parameters)
+                    logger.info(f"Tool execute executed: {result}")
                 else:
                     # אין method מתאים
                     logger.warning(f"Tool has no method '{task.action_type}' or 'execute'")
@@ -258,8 +263,11 @@ class AgentOrchestrator:
                 
                 duration = time() - start_time
                 
+                # Check if result indicates success
+                task_success = result.get("success", True) if isinstance(result, dict) else True
+                
                 return ExecutionResult(
-                    success=True,
+                    success=task_success,
                     output=result,
                     duration=duration
                 )

@@ -373,6 +373,36 @@ async def health_check():
     return {"status": "healthy", "initialized": zero.initialized}
 
 
+@app.post("/api/agent/direct")
+async def direct_agent_execution(request: ChatRequest):
+    """
+    Direct execution via Agent Orchestrator - bypasses normal chat flow
+    """
+    if not zero.initialized:
+        raise HTTPException(status_code=503, detail="Agent not initialized")
+    
+    if not zero.agent_orchestrator:
+        raise HTTPException(status_code=503, detail="Agent Orchestrator not available")
+    
+    try:
+        print(f"[API/DIRECT] Executing goal: {request.message}")
+        result = zero.agent_orchestrator.execute_goal(request.message, max_iterations=10)
+        
+        return ChatResponse(
+            response=f"Agent Orchestrator Result:\n\nSuccess: {result.success}\n\nOutput: {result.output}\n\nDuration: {result.duration if hasattr(result, 'duration') else 'N/A'}s",
+            model_used="agent_orchestrator",
+            duration=result.duration if hasattr(result, 'duration') else None
+        )
+    except Exception as e:
+        import traceback
+        error_msg = f"Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        print(f"[API/DIRECT] ERROR: {error_msg}")
+        return ChatResponse(
+            response=error_msg,
+            model_used="agent_orchestrator_error"
+        )
+
+
 # ============================================================================
 # Chat Endpoints
 # ============================================================================

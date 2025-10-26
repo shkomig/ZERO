@@ -172,6 +172,9 @@ class CodeExecutorTool:
         try:
             from pathlib import Path
             
+            print(f"[CodeExecutor] create_folder called with path: {path}")
+            print(f"[CodeExecutor] workspace: {self.workspace}")
+            
             # Resolve path relative to workspace
             if path.startswith('/') or (len(path) > 1 and path[1] == ':'):
                 # Absolute path
@@ -180,8 +183,12 @@ class CodeExecutorTool:
                 # Relative to workspace
                 folder_path = self.workspace / path
             
+            print(f"[CodeExecutor] Resolved folder_path: {folder_path}")
+            
             # Create directory
             folder_path.mkdir(parents=True, exist_ok=True)
+            
+            print(f"[CodeExecutor] Directory created successfully: {folder_path}")
             
             return {
                 "success": True,
@@ -190,6 +197,7 @@ class CodeExecutorTool:
             }
             
         except Exception as e:
+            print(f"[CodeExecutor] ERROR creating folder: {e}")
             return {
                 "success": False,
                 "error": str(e)
