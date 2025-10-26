@@ -838,12 +838,313 @@
                 opacity: 1;
             }
         }
+
+        /* ========================================
+           RESPONSIVE DESIGN - Mobile & Tablet
+           ======================================== */
+
+        /* Tablet (768px - 1024px) */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 200px 1fr;
+            }
+
+            .sidebar {
+                width: 200px;
+                padding: var(--spacing-md);
+            }
+
+            .logo h1 {
+                font-size: 20px;
+            }
+
+            .logo p {
+                font-size: 11px;
+            }
+
+            .nav-item {
+                padding: var(--spacing-sm);
+                font-size: 13px;
+            }
+
+            .artifacts-panel.open {
+                width: 40%;
+                min-width: 300px;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .chat-input {
+                font-size: 14px;
+            }
+        }
+
+        /* Mobile (max 768px) */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                position: relative;
+            }
+
+            /* Sidebar becomes overlay */
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                bottom: 0;
+                width: 280px;
+                z-index: 1000;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            /* Sidebar overlay backdrop */
+            .sidebar-backdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+
+            .sidebar-backdrop.active {
+                display: block;
+            }
+
+            /* Main content full width */
+            .main-content {
+                padding: var(--spacing-md);
+            }
+
+            /* Add hamburger menu button */
+            .mobile-menu-btn {
+                display: block;
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 998;
+                background: var(--claude-primary);
+                color: var(--claude-white);
+                border: none;
+                border-radius: var(--radius-sm);
+                padding: 12px 16px;
+                font-size: 20px;
+                cursor: pointer;
+                box-shadow: 0 2px 8px rgba(218, 119, 86, 0.3);
+                transition: all 0.25s ease;
+            }
+
+            .mobile-menu-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px rgba(218, 119, 86, 0.4);
+            }
+
+            /* Header adjustments */
+            .header {
+                margin-top: 50px;
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .header > div {
+                width: 100%;
+            }
+
+            .search-bar {
+                width: 100% !important;
+            }
+
+            /* Message bubbles */
+            .message {
+                max-width: 90%;
+                padding: var(--spacing-md);
+            }
+
+            .message.user {
+                margin-left: 5%;
+            }
+
+            .message.zero {
+                margin-right: 5%;
+            }
+
+            /* Chat input area */
+            .chat-input-area {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .chat-input {
+                min-height: 80px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+
+            .send-btn {
+                width: 100%;
+                padding: var(--spacing-md);
+            }
+
+            /* Artifacts panel becomes full screen overlay on mobile */
+            .artifacts-panel.open {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                min-width: 0;
+                z-index: 1001;
+            }
+
+            /* Hide desktop artifacts button, show mobile one */
+            .header button {
+                padding: var(--spacing-sm) var(--spacing-md);
+                font-size: 14px;
+            }
+
+            /* Content areas */
+            .content-area h2 {
+                font-size: 22px;
+            }
+
+            /* Forms and inputs */
+            input[type="text"],
+            input[type="email"],
+            textarea,
+            select {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+
+            /* Projects list */
+            .project-item {
+                padding: var(--spacing-sm);
+            }
+
+            /* Calendar adjustments */
+            #calendar {
+                font-size: 12px;
+            }
+
+            /* Responsive tables */
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: var(--spacing-sm);
+            }
+        }
+
+        /* Small mobile (max 480px) */
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+            }
+
+            .logo h1 {
+                font-size: 18px;
+            }
+
+            .message {
+                max-width: 95%;
+                font-size: 14px;
+            }
+
+            .message-header {
+                font-size: 10px;
+            }
+
+            .content-area h2 {
+                font-size: 18px;
+            }
+
+            .send-btn {
+                font-size: 14px;
+            }
+
+            .artifacts-header h3 {
+                font-size: 16px;
+            }
+
+            .artifacts-tab {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+
+            .artifacts-btn {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+
+        /* Hide mobile menu button on desktop */
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+        }
+
+        /* Landscape mobile optimization */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .chat-input {
+                min-height: 60px;
+            }
+
+            .message {
+                padding: 8px 12px;
+            }
+
+            .header {
+                margin-top: 60px;
+            }
+        }
+
+        /* High DPI screens */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .message,
+            .nav-item,
+            .send-btn {
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+        }
+
+        /* Accessibility - Reduce Motion */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Dark mode support (future enhancement) */
+        @media (prefers-color-scheme: dark) {
+            /* Можно добавить темную тему в будущем */
+        }
     </style>
 </head>
 <body>
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">☰</button>
+    
+    <!-- Sidebar Backdrop -->
+    <div class="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
+    
     <div class="container">
         <!-- Sidebar -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="logo">
                 <img src="/zero_logo/generated-image.png" alt="Zero Logo" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; object-fit: cover;">
                 <h1>🚀 Zero</h1>
@@ -2389,6 +2690,66 @@ python api_server.py
             currentArtifact = { code: '', preview: '' };
             document.getElementById('artifactsPreview').innerHTML = '<p style="color: var(--claude-text-light); text-align: center; margin-top: 40px;">אין תוכן להצגה כרגע</p>';
             document.getElementById('artifactsCode').innerHTML = '<pre><code>// No code to display</code></pre>';
+        }
+
+        // ========================================
+        // Mobile Sidebar Functions
+        // ========================================
+        
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            
+            if (sidebar.classList.contains('open')) {
+                closeMobileSidebar();
+            } else {
+                openMobileSidebar();
+            }
+        }
+        
+        function openMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            
+            sidebar.classList.add('open');
+            backdrop.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+        }
+        
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.querySelector('.sidebar-backdrop');
+            
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('active');
+            document.body.style.overflow = ''; // Restore scroll
+        }
+
+        // Close mobile sidebar when clicking on navigation items
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        closeMobileSidebar();
+                    }
+                });
+            });
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                closeMobileSidebar();
+            }
+        });
+
+        // Add viewport meta tag for proper mobile scaling
+        if (!document.querySelector('meta[name="viewport"]')) {
+            const viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+            document.head.appendChild(viewport);
         }
 
         // Initialize
