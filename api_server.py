@@ -53,10 +53,14 @@ except:
     DATABASE_AVAILABLE = False
 
 try:
-    from tool_websearch import WebSearchTool
+    from tool_websearch_improved import EnhancedWebSearchTool
     WEBSEARCH_AVAILABLE = True
 except:
-    WEBSEARCH_AVAILABLE = False
+    try:
+        from tool_websearch import WebSearchTool
+        WEBSEARCH_AVAILABLE = True
+    except:
+        WEBSEARCH_AVAILABLE = False
 
 # Import memory
 try:
@@ -460,10 +464,18 @@ async def chat(request: ChatRequest):
                         search_query = request.message.lower().split(trigger, 1)[1].strip()
                         break
                 
-                from tool_websearch import WebSearchTool
-                search_tool = WebSearchTool()
-                search_result = search_tool.search_simple(search_query)
-                search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
+                # Use Enhanced WebSearch if available
+                try:
+                    from tool_websearch_improved import EnhancedWebSearchTool
+                    search_tool = EnhancedWebSearchTool()
+                    search_result = search_tool.smart_search(search_query)
+                    formatted_result = search_tool.format_results(search_result)
+                    search_results = f"\n\nחיפוש עדכני ברשת:\n{formatted_result}\n"
+                except:
+                    from tool_websearch import WebSearchTool
+                    search_tool = WebSearchTool()
+                    search_result = search_tool.search_simple(search_query)
+                    search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
         
         # Check if this is a complex task that requires Agent Orchestrator
         complex_task_keywords = [
@@ -584,12 +596,18 @@ async def chat(request: ChatRequest):
             
             # Load user preferences and add to system message
             try:
+                from enhanced_system_prompt import get_system_prompt
                 prefs = zero.memory.short_term.get_all_preferences()
                 if prefs:
-                    # Based on llm-concise-guide.md - Best Practices for Concise Responses
-                    # Using: Few-Shot + Temperature Control + Max Tokens + Clear Structure
-                    
-                    preferences = """# אתה Zero - עוזר AI תמציתי בעברית
+                    # Check if user wants detailed or concise
+                    response_mode = prefs.get('response_mode', 'detailed')
+                    preferences = get_system_prompt(detailed=(response_mode == 'detailed'))
+                else:
+                    # Default to detailed responses for better information
+                    preferences = get_system_prompt(detailed=True)
+            except:
+                # Fallback to concise mode
+                preferences = """# אתה Zero - עוזר AI תמציתי בעברית
 
 ## כללים קריטיים - תמציתיות
 - ענה במשפט אחד בלבד (מקסימום 2 משפטים)
@@ -597,29 +615,7 @@ async def chat(request: ChatRequest):
 - ללא הקדמות, ללא סיכומים
 - ישיר לעניין - no fluff
 
-## דוגמאות נכונות (תמציתיות)
-
-ש: מה זה Python?
-ת: שפת תכנות רב-תכליתית לפיתוח אפליקציות.
-
-ש: מה זה Docker?
-ת: כלי לניהול קונטיינרים של אפליקציות.
-
-ש: צור תיקייה test
-ת: ✅ נוצר test/
-
-ש: מה זה machine learning?
-ת: AI שמאפשר למחשבים ללמוד מנתונים ללא תכנות מפורש.
-
-## דוגמה שגויה - אל תעשה כך
-ש: מה זה Docker?
-ת: Docker הוא פלטפורמה מתקדמת שפותחה בשנת 2013 על ידי חברת Docker Inc., והיא מאפשרת... [ארוך מדי! 150+ מילים]
-
----
-
 כל תשובה: משפט אחד בלבד, ישיר, תמציתי."""
-            except:
-                pass
         
         # Build prompt with modular architecture (from llm-concise-guide.md)
         # Structure: Role + Constraints + Format + Task (for better instruction following)
