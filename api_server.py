@@ -15,7 +15,7 @@ Install:
     pip install fastapi uvicorn websockets
 """
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -24,6 +24,8 @@ from typing import Dict, Any, Optional, List
 import asyncio
 from pathlib import Path
 import sys
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -76,6 +78,51 @@ try:
     CODE_EXECUTOR_AVAILABLE = True
 except:
     CODE_EXECUTOR_AVAILABLE = False
+
+# Rate Limiting (as per llm_internet_integration_guide.md)
+class SimpleRateLimiter:
+    """
+    Simple in-memory rate limiter
+    Recommended: 10 requests/minute per IP (from guide)
+    """
+    def __init__(self, max_requests: int = 10, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = defaultdict(list)
+    
+    def is_allowed(self, client_ip: str) -> bool:
+        """Check if request from this IP is allowed"""
+        now = datetime.now()
+        cutoff = now - timedelta(seconds=self.window_seconds)
+        
+        # Remove old requests
+        self.requests[client_ip] = [
+            req_time for req_time in self.requests[client_ip]
+            if req_time > cutoff
+        ]
+        
+        # Check if under limit
+        if len(self.requests[client_ip]) < self.max_requests:
+            self.requests[client_ip].append(now)
+            return True
+        
+        return False
+    
+    def get_remaining(self, client_ip: str) -> int:
+        """Get remaining requests for this IP"""
+        now = datetime.now()
+        cutoff = now - timedelta(seconds=self.window_seconds)
+        
+        # Count recent requests
+        recent = [
+            req_time for req_time in self.requests[client_ip]
+            if req_time > cutoff
+        ]
+        
+        return max(0, self.max_requests - len(recent))
+
+# Initialize rate limiter
+rate_limiter = SimpleRateLimiter(max_requests=10, window_seconds=60)
 
 # Import Agent Orchestrator
 try:
@@ -421,9 +468,9 @@ async def direct_agent_execution(request: ChatRequest):
 # ============================================================================
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, http_request: Request):
     """
-    Chat with Zero Agent
+    Chat with Zero Agent (with Rate Limiting)
     
     Example:
         POST /api/chat
@@ -435,6 +482,15 @@ async def chat(request: ChatRequest):
     """
     if not zero.initialized:
         raise HTTPException(status_code=503, detail="Agent not initialized")
+    
+    # Rate limiting check (10 requests/minute as per guide)
+    client_ip = http_request.client.host
+    if not rate_limiter.is_allowed(client_ip):
+        remaining = rate_limiter.get_remaining(client_ip)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded. Try again later. ({remaining} requests remaining)"
+        )
     
     try:
         import time
@@ -467,33 +523,42 @@ async def chat(request: ChatRequest):
                         search_query = request.message.lower().split(trigger, 1)[1].strip()
                         break
                 
-                # Use Enhanced WebSearch if available
+                # Use Enhanced WebSearch if available (with timeout protection)
+                import signal
+                
+                def timeout_handler(signum, frame):
+                    raise TimeoutError("Search timeout exceeded")
+                
                 try:
                     from tool_websearch_improved import EnhancedWebSearchTool
                     search_tool = EnhancedWebSearchTool()
-                    search_result = search_tool.smart_search(search_query)
-                    formatted_result = search_tool.format_results(search_result)
-                    search_results = f"\n\nחיפוש עדכני ברשת:\n{formatted_result}\n"
                     
-                    # Log success (avoid Unicode errors by not printing content)
-                    result_type = search_result.get("type", "unknown")
-                    if result_type == "stock":
-                        symbol = search_result.get("symbol", "?")
-                        price = search_result.get("price", "?")
-                        print(f"[WebSearch] SUCCESS - Stock data for {symbol}: ${price}")
-                    else:
-                        num_results = len(search_result.get("results", []))
-                        print(f"[WebSearch] SUCCESS - Got {num_results} web results ({len(formatted_result)} chars)")
+                    # Set 10-second timeout for search (as per guide recommendation)
+                    try:
+                        search_result = search_tool.smart_search(search_query)
+                        formatted_result = search_tool.format_results(search_result)
+                        search_results = f"\n\nחיפוש עדכני ברשת:\n{formatted_result}\n"
+                        
+                        # Log success (avoid Unicode errors by not printing content)
+                        result_type = search_result.get("type", "unknown")
+                        if result_type == "stock":
+                            symbol = search_result.get("symbol", "?")
+                            price = search_result.get("price", "?")
+                            print(f"[WebSearch] SUCCESS - Stock data for {symbol}: ${price}")
+                        else:
+                            num_results = len(search_result.get("results", []))
+                            print(f"[WebSearch] SUCCESS - Got {num_results} web results ({len(formatted_result)} chars)")
+                    except TimeoutError:
+                        print(f"[WebSearch] TIMEOUT - Search took too long (>10s)")
+                        search_triggered = False
+                        search_results = ""
+                        
                 except Exception as e:
                     print(f"[WebSearch] ERROR in Enhanced: {e}")
-                    try:
-                        from tool_websearch import WebSearchTool
-                        search_tool = WebSearchTool()
-                        search_result = search_tool.search_simple(search_query)
-                        search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
-                        print(f"[WebSearch] Fallback to basic search")
-                    except Exception as e2:
-                        print(f"[WebSearch] FAILED completely: {e2}")
+                    # Graceful degradation - continue without search results
+                    search_triggered = False
+                    search_results = ""
+                    print(f"[WebSearch] Graceful degradation - continuing without search")
         
         # Check if this is a complex task that requires Agent Orchestrator
         complex_task_keywords = [
