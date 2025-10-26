@@ -418,7 +418,35 @@ async def chat(request: ChatRequest):
                 search_result = search_tool.search_simple(search_query)
                 search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
         
-        # Check for action requests - expanded support
+        # Check if this is a complex task that requires Agent Orchestrator
+        complex_task_keywords = [
+            'צור פרויקט', 'create project', 'צור אפליקציה', 'create app',
+            'צור תיקייה', 'create folder', 'עשה תיקייה', 'צר תיקיה', 'תיצור תיקייה',
+            'פתח דפדפן', 'open browser', 'open chrome', 'פתח כרום',
+            'צור קובץ', 'create file', 'עשה קובץ',
+            'רשום הודעה', 'write message',
+            'הרץ פקודה', 'run command'
+        ]
+        
+        # Check if we should use Agent Orchestrator for complex tasks
+        use_orchestrator = False
+        orchestrator_result = None
+        
+        if zero.agent_orchestrator and any(keyword in request.message.lower() for keyword in complex_task_keywords):
+            try:
+                # Use Agent Orchestrator for complex tasks
+                use_orchestrator = True
+                orchestrator_result = zero.agent_orchestrator.execute_goal(request.message, max_iterations=5)
+                
+                if orchestrator_result.success:
+                    # Create a simplified response based on orchestrator result
+                    action_result = f"✅ Task completed: {orchestrator_result.output}"
+                else:
+                    action_result = f"⚠️ Task completed with issues: {orchestrator_result.error}"
+            except Exception as e:
+                action_result = f"❌ Error in orchestrator: {str(e)}"
+        
+        # Check for simple action requests - expanded support (if not using orchestrator)
         action_keywords = [
             'צור תיקייה', 'create folder', 'עשה תיקייה', 'צר תיקיה', 'תיצור תיקייה',
             'פתח דפדפן', 'open browser', 'open chrome', 'פתח כרום',
@@ -427,7 +455,7 @@ async def chat(request: ChatRequest):
             'הרץ פקודה', 'run command'
         ]
         
-        if any(keyword in request.message.lower() for keyword in action_keywords):
+        if not use_orchestrator and any(keyword in request.message.lower() for keyword in action_keywords):
             if zero.code_executor:
                 try:
                     from pathlib import Path
