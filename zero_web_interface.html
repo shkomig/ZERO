@@ -282,25 +282,63 @@
 
         .send-btn {
             padding: var(--spacing-md) var(--spacing-xl);
-            background: var(--claude-primary);
-            color: var(--claude-white);
-            border: none;
+            background: var(--claude-white);
+            color: var(--claude-text);
+            border: 1.5px solid var(--claude-border);
             border-radius: var(--radius-md);
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 500;
             font-family: ui-serif, Georgia, serif;
-            transition: all 0.25s ease;
-            box-shadow: 0 2px 8px rgba(218, 119, 86, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
         }
 
         .send-btn:hover {
-            background: var(--claude-primary-dark);
-            box-shadow: 0 4px 12px rgba(218, 119, 86, 0.4);
-            transform: translateY(-2px);
+            background: var(--claude-bg-light);
+            border-color: var(--claude-primary);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
         }
 
         .send-btn:active {
             transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Primary action button variant */
+        .send-btn.btn-primary {
+            background: var(--claude-primary);
+            color: var(--claude-white);
+            border-color: var(--claude-primary);
+        }
+
+        .send-btn.btn-primary:hover {
+            background: var(--claude-primary-dark);
+            border-color: var(--claude-primary-dark);
+        }
+
+        /* Success button variant */
+        .send-btn.btn-success {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .send-btn.btn-success:hover {
+            background: #218838;
+            border-color: #218838;
+        }
+
+        /* Warning button variant */
+        .send-btn.btn-warning {
+            background: #ffc107;
+            color: #333;
+            border-color: #ffc107;
+        }
+
+        .send-btn.btn-warning:hover {
+            background: #e0a800;
+            border-color: #e0a800;
         }
 
         /* Code Editor */
@@ -1147,7 +1185,7 @@
         <div class="sidebar" id="sidebar">
             <div class="logo">
                 <img src="/zero_logo/generated-image.png" alt="Zero Logo" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; object-fit: cover;">
-                <h1>🚀 Zero</h1>
+                <h1>Zero</h1>
                 <p>AI Agent Platform</p>
             </div>
 
@@ -1216,8 +1254,8 @@
             <div id="chat" class="content-area active">
                 <h2>💬 שיחה עם Zero</h2>
                 <div style="margin-bottom: 10px; display: flex; gap: 10px;">
-                    <button class="send-btn" onclick="copyConversation()" style="background: #28a745;">📋 העתק שיחה</button>
-                    <button class="send-btn" onclick="saveConversation()" style="background: #ffc107; color: #333;">💾 שמור שיחה</button>
+                    <button class="send-btn btn-success" onclick="copyConversation()">📋 העתק שיחה</button>
+                    <button class="send-btn btn-warning" onclick="saveConversation()">💾 שמור שיחה</button>
                 </div>
                 <div class="chat-container">
                     <div class="chat-messages" id="chatMessages">
@@ -1228,10 +1266,10 @@
                     </div>
                     <div class="chat-input-area">
                         <input type="text" class="chat-input" id="chatInput" placeholder="הקלד הודעה..." onkeypress="handleChatInput(event)">
-                        <button class="send-btn" onclick="toggleRecording()" id="micBtn" style="background: #e91e63; margin-right: 10px;" title="הקלט דיבור (נדרש localhost)">🎤 הקלט</button>
-                        <button class="send-btn" onclick="stopConversation()" id="stopBtn" style="background: #dc3545; margin-right: 10px; display: none;" title="עצור שיחה">⏹️ עצור</button>
-                        <button class="send-btn" onclick="toggleStreaming()" id="streamBtn" style="background: #7c3aed; margin-right: 10px;" title="Streaming Mode">📡 Streaming</button>
-                        <button class="send-btn" onclick="sendMessage()" id="sendBtn">שלח</button>
+                        <button class="send-btn" onclick="toggleRecording()" id="micBtn" style="margin-right: 10px;" title="הקלט דיבור (נדרש localhost)">🎤 הקלט</button>
+                        <button class="send-btn" onclick="stopConversation()" id="stopBtn" style="margin-right: 10px; display: none;" title="עצור שיחה">⏹️ עצור</button>
+                        <button class="send-btn" onclick="toggleStreaming()" id="streamBtn" style="margin-right: 10px;" title="Streaming Mode">📡 Streaming</button>
+                        <button class="send-btn btn-primary" onclick="sendMessage()" id="sendBtn">שלח</button>
                     </div>
                     <div id="micWarning" style="display: none; padding: 10px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; margin-top: 10px; color: #856404;">
                         <strong>⚠️ גישה למיקרופון זמינה רק דרך localhost:</strong><br>
