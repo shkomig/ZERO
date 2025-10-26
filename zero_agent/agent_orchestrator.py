@@ -145,19 +145,33 @@ class AgentOrchestrator:
         tasks = []
         
         # דוגמה: יצירת פרויקט חדש
-        if 'צור פרויקט' in goal or 'create project' in goal:
+        if 'צור פרויקט' in goal or 'create project' in goal or 'פרויקט' in goal:
+            # Extract project name from goal
+            project_name = "myapp"  # default
+            for word in goal.split():
+                if word not in ['צור', 'פרויקט', 'create', 'project', 'חדש', 'בשם', 'new', 'named', 'called']:
+                    project_name = word
+                    break
+            
             tasks.append(Task(
                 id="1",
-                description="Create project directory",
+                description=f"Create project directory: {project_name}",
                 action_type="create_folder",
-                parameters={"path": "./new_project"}
+                parameters={"path": f"./{project_name}"}
             ))
             tasks.append(Task(
                 id="2",
                 description="Create README file",
                 action_type="create_file",
-                parameters={"path": "./new_project/README.md", "content": "# New Project"},
-                dependencies=["1"]  # תלוי ב-task 1
+                parameters={"path": f"./{project_name}/README.md", "content": f"# {project_name}\n\nPython project"},
+                dependencies=["1"]
+            ))
+            tasks.append(Task(
+                id="3",
+                description="Create main.py",
+                action_type="create_file",
+                parameters={"path": f"./{project_name}/main.py", "content": "#!/usr/bin/env python3\n\nprint('Hello, world!')\n"},
+                dependencies=["1"]
             ))
         
         # דוגמה: חיפוש ברשת
