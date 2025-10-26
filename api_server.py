@@ -265,6 +265,17 @@ async def serve_html():
     else:
         raise HTTPException(status_code=404, detail="HTML file not found")
 
+# Serve logo
+@app.get("/zero_logo/{filename}")
+async def serve_logo(filename: str):
+    """Serve files from zero logo directory"""
+    logo_dir = Path("zero logo")
+    file_path = logo_dir / filename
+    if file_path.exists():
+        return FileResponse(file_path)
+    else:
+        raise HTTPException(status_code=404, detail="Logo file not found")
+
 
 # ============================================================================
 # Startup/Shutdown
