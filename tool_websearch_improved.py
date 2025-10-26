@@ -245,22 +245,32 @@ class EnhancedWebSearchTool:
         Returns:
             Appropriate search results
         """
-        # Check if it's a stock query
-        stock_patterns = [
-            r'\b([A-Z]{1,5})\s+(stock|price|מחיר|מניה)',
-            r'(stock|price|מחיר|מניה)\s+\b([A-Z]{1,5})\b',
-            r'\b([A-Z]{2,5})\b.*?(qqq|spy|aapl|msft|googl|amzn|tsla)'
-        ]
+        # List of known stock symbols (most popular)
+        known_stocks = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 
+                       'NVDA', 'META', 'NFLX', 'AMD', 'INTC', 'DIA', 'IWM',
+                       'QBTS', 'RGTI']  # Added quantum computing stocks
         
-        for pattern in stock_patterns:
-            match = re.search(pattern, query, re.IGNORECASE)
-            if match:
-                # Extract symbol
-                groups = match.groups()
-                symbol = next((g for g in groups if g and g.isupper() and 1 <= len(g) <= 5), None)
-                
-                if symbol:
-                    stock_data = self.search_stock(symbol)
+        # Check if query contains stock keywords in Hebrew or English
+        stock_keywords = ['מחיר', 'מניה', 'מניית', 'price', 'stock', 'סימול', 'symbol']
+        has_stock_keyword = any(keyword in query.lower() for keyword in stock_keywords)
+        
+        # Extract uppercase words (potential stock symbols)
+        uppercase_words = re.findall(r'\b[A-Z]{2,5}\b', query)
+        
+        # If we find a known stock symbol, use stock search
+        for word in uppercase_words:
+            if word.upper() in known_stocks or has_stock_keyword:
+                stock_data = self.search_stock(word.upper())
+                if stock_data.get("success"):
+                    return stock_data
+        
+        # If query has stock keywords but no uppercase, try to extract from end of query
+        if has_stock_keyword:
+            words = query.split()
+            for word in reversed(words):
+                # Try last uppercase-like words
+                if len(word) >= 2 and len(word) <= 5:
+                    stock_data = self.search_stock(word.upper())
                     if stock_data.get("success"):
                         return stock_data
         

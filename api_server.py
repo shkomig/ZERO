@@ -474,8 +474,16 @@ async def chat(request: ChatRequest):
                     search_result = search_tool.smart_search(search_query)
                     formatted_result = search_tool.format_results(search_result)
                     search_results = f"\n\nחיפוש עדכני ברשת:\n{formatted_result}\n"
-                    print(f"[WebSearch] SUCCESS - Got {len(formatted_result)} chars of data")
-                    print(f"[WebSearch] First 200 chars: {formatted_result[:200]}")
+                    
+                    # Log success (avoid Unicode errors by not printing content)
+                    result_type = search_result.get("type", "unknown")
+                    if result_type == "stock":
+                        symbol = search_result.get("symbol", "?")
+                        price = search_result.get("price", "?")
+                        print(f"[WebSearch] SUCCESS - Stock data for {symbol}: ${price}")
+                    else:
+                        num_results = len(search_result.get("results", []))
+                        print(f"[WebSearch] SUCCESS - Got {num_results} web results ({len(formatted_result)} chars)")
                 except Exception as e:
                     print(f"[WebSearch] ERROR in Enhanced: {e}")
                     try:
