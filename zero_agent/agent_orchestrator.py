@@ -148,10 +148,19 @@ class AgentOrchestrator:
         if 'צור פרויקט' in goal or 'create project' in goal or 'פרויקט' in goal:
             # Extract project name from goal
             project_name = "myapp"  # default
-            for word in goal.split():
-                if word not in ['צור', 'פרויקט', 'create', 'project', 'חדש', 'בשם', 'new', 'named', 'called']:
-                    project_name = word
+            
+            # Try to find name after "בשם" or "named"
+            words = goal.split()
+            for i, word in enumerate(words):
+                if word in ['בשם', 'named', 'called'] and i + 1 < len(words):
+                    project_name = words[i + 1]
                     break
+            else:
+                # Fallback: take last word that's not a keyword
+                for word in reversed(words):
+                    if word not in ['צור', 'פרויקט', 'create', 'project', 'חדש', 'בשם', 'new', 'named', 'called', 'Python', 'python']:
+                        project_name = word
+                        break
             
             tasks.append(Task(
                 id="1",
