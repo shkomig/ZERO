@@ -28,5 +28,15 @@ google-api-python-client>=2.100.0
 # Voice Interface (faster-whisper)
 faster-whisper>=1.2.0
 
+# Web scraping
+beautifulsoup4>=4.12.0
+
 # Timezone support
 pytz>=2023.3
+
+# Database (optional - uncomment if needed)
+# chromadb>=0.4.0
+
+# LLM frameworks (optional - uncomment if needed)
+# langchain>=0.1.0
+# langchain-community>=0.0.1
