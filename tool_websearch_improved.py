@@ -278,7 +278,7 @@ class EnhancedWebSearchTool:
             Formatted string
         """
         if not search_result.get("success"):
-            return f"❌ חיפוש נכשל: {search_result.get('error', 'שגיאה לא ידועה')}"
+            return f"חיפוש נכשל: {search_result.get('error', 'שגיאה לא ידועה')}"
         
         # Stock result
         if search_result.get("type") == "stock":
@@ -290,10 +290,10 @@ class EnhancedWebSearchTool:
             change_percent = search_result["change_percent"]
             market_state = search_result["market_state"]
             
-            direction = "📈" if change >= 0 else "📉"
+            direction = "+" if change >= 0 else "-"
             sign = "+" if change >= 0 else ""
             
-            output = f"💰 **{name} ({symbol})**\n\n"
+            output = f"**{name} ({symbol})**\n\n"
             output += f"**מחיר נוכחי:** {price} {currency}\n"
             output += f"**שינוי:** {direction} {sign}{change} ({sign}{change_percent}%)\n"
             output += f"**סגירה קודמת:** {search_result['previous_close']} {currency}\n"
@@ -305,12 +305,12 @@ class EnhancedWebSearchTool:
         # Web search results
         results = search_result.get("results", [])
         if not results:
-            return f"❌ לא נמצאו תוצאות עבור: {search_result.get('query', '')}"
+            return f"לא נמצאו תוצאות עבור: {search_result.get('query', '')}"
         
         query = search_result.get("query", "")
         source = search_result.get("source", "Web")
         
-        output = f"🔍 **תוצאות חיפוש עבור:** '{query}'\n"
+        output = f"**תוצאות חיפוש עבור:** '{query}'\n"
         output += f"**מקור:** {source}\n\n"
         
         for i, result in enumerate(results, 1):
