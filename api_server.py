@@ -474,11 +474,18 @@ async def chat(request: ChatRequest):
                     search_result = search_tool.smart_search(search_query)
                     formatted_result = search_tool.format_results(search_result)
                     search_results = f"\n\nחיפוש עדכני ברשת:\n{formatted_result}\n"
-                except:
-                    from tool_websearch import WebSearchTool
-                    search_tool = WebSearchTool()
-                    search_result = search_tool.search_simple(search_query)
-                    search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
+                    print(f"[WebSearch] SUCCESS - Got {len(formatted_result)} chars of data")
+                    print(f"[WebSearch] First 200 chars: {formatted_result[:200]}")
+                except Exception as e:
+                    print(f"[WebSearch] ERROR in Enhanced: {e}")
+                    try:
+                        from tool_websearch import WebSearchTool
+                        search_tool = WebSearchTool()
+                        search_result = search_tool.search_simple(search_query)
+                        search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
+                        print(f"[WebSearch] Fallback to basic search")
+                    except Exception as e2:
+                        print(f"[WebSearch] FAILED completely: {e2}")
         
         # Check if this is a complex task that requires Agent Orchestrator
         complex_task_keywords = [
@@ -636,11 +643,13 @@ async def chat(request: ChatRequest):
         extra_info = ""
         if search_triggered and search_results:
             extra_info += f"\nמידע נוסף מהרשת:\n{search_results}\n"
+            print(f"[Prompt] Adding search_results to prompt ({len(search_results)} chars)")
         if action_result:
             extra_info += f"\nפעולה שבוצעה: {action_result}\n"
         
         if extra_info:
             prompt += extra_info + "\n"
+            print(f"[Prompt] Total extra_info added: {len(extra_info)} chars")
         
         # 4. User message - clear and direct
         prompt += f"ש: {request.message}\nת: "
