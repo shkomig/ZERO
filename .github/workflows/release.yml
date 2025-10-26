@@ -1,0 +1,82 @@
+name: Release - Semantic Versioning
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get version from commits
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "/(BREAKING CHANGE|!)/"
+          minor_pattern: "/feat:/"
+          patch_pattern: "/fix:/"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: false
+      
+      - name: Create Release
+        if: steps.version.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "📦 New version: ${{ steps.version.outputs.version }}"
+          gh release create v${{ steps.version.outputs.version }} \
+            --title "Release v${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            --notes "## What's Changed
+
+          This release was automatically generated based on conventional commits.
+          
+          **Version:** ${{ steps.version.outputs.version }}
+          **Previous:** ${{ steps.version.outputs.version_tag }}
+          
+          See the full changelog below for all changes included in this release."
+      
+      - name: Update CHANGELOG
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          # Create or update CHANGELOG.md
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "All notable changes to Zero Agent will be documented in this file." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # Add new version entry
+          sed -i '1a\\n## [v${{ steps.version.outputs.version }}] - $(date +%Y-%m-%d)\n' CHANGELOG.md
+          
+          echo "✅ CHANGELOG updated"
+      
+      - name: Commit CHANGELOG
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add CHANGELOG.md
+          git commit -m "docs: update CHANGELOG for v${{ steps.version.outputs.version }}" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+      
+      - name: Summary
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          echo "🎉 Release v${{ steps.version.outputs.version }} created successfully!"
+          echo "📝 CHANGELOG updated"
+          echo "🔗 Check: https://github.com/${{ github.repository }}/releases"
+

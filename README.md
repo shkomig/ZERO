@@ -63,6 +63,13 @@ cp env.example .env      # Linux/Mac
 
 ### Run Zero Agent
 
+**Option 1: API Server (Recommended)**
+```bash
+python api_server.py
+```
+Then open `http://localhost:8080/zero_web_interface.html` in your browser.
+
+**Option 2: CLI Mode**
 ```bash
 python main.py
 ```
@@ -107,11 +114,14 @@ zero take a screenshot and analyze what's on screen
 
 | Tool | Description |
 |------|-------------|
-| `git_*` | Git operations (init, clone, commit, push, status) |
-| `system_*` | System monitoring (CPU, memory, disk, processes) |
-| `screenshot` | Screen capture with multiple backends |
-| `web_search` | Google search with result extraction |
-| `navigate_url` | Browser automation |
+| **WebSearch** | Enhanced search with stock prices (Yahoo Finance + DuckDuckGo) |
+| **Code Executor** | Execute Python/bash code, create files and folders |
+| **Gmail** | Send and read emails |
+| **Calendar** | Manage Google Calendar events |
+| **Database** | SQLite database operations |
+| **Git Operations** | Git init, clone, commit, push, status |
+| **System Monitor** | CPU, memory, disk, processes |
+| **Browser** | Automated web navigation |
 
 ## 📊 Architecture
 
@@ -208,11 +218,14 @@ zero_agent/
 - [x] Basic tools
 - [x] CLI interface
 
-### Phase 2: Advanced Features (In Progress)
-- [ ] Docker integration
-- [ ] Email automation
+### Phase 2: Advanced Features ✅
+- [x] Web UI with Projects system
+- [x] Enhanced WebSearch with stock prices
+- [x] Agent Orchestrator with task planning
+- [x] Memory system with RAG
+- [x] Email and Calendar integration
 - [ ] Voice input/output
-- [ ] Web UI (Gradio)
+- [ ] Docker integration
 
 ### Phase 3: Intelligence
 - [ ] Multi-agent collaboration
