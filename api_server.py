@@ -151,6 +151,7 @@ class ChatRequest(BaseModel):
     model: Optional[str] = None  # fast, smart, coder, balanced
     use_memory: bool = True
     stream: bool = False
+    conversation_history: Optional[List[Dict[str, str]]] = None  # NEW: For context management
 
 
 class ChatResponse(BaseModel):
@@ -668,14 +669,26 @@ async def chat(request: ChatRequest, http_request: Request):
                 except Exception as e:
                     action_result = f"❌ Error: {str(e)}"
         
-        # Build context from memory
+        # Build context from conversation history (NEW!)
         context = ""
-        preferences = ""
-        if request.use_memory and zero.memory:
+        if request.conversation_history:
+            # Format last 10 messages for context
+            context_msgs = []
+            for msg in request.conversation_history[-10:]:  # Last 10 only
+                role = "משתמש" if msg.get('role') == 'user' else "Zero"
+                content = msg.get('content', '')
+                context_msgs.append(f"{role}: {content}")
+            context = "\n".join(context_msgs)
+        
+        # Fallback to old memory system if no conversation history provided
+        elif request.use_memory and zero.memory:
             context = zero.memory.build_context(
                 current_task=request.message,
                 max_length=2000
             )
+        
+        preferences = ""
+        if request.use_memory and zero.memory:
             
             # Load user preferences and add to system message
             try:

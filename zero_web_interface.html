@@ -1435,6 +1435,10 @@ print(result)
         const API_URL = 'http://localhost:8080';
         let streamingMode = false;
         let allModelsUsed = {}; // Track all models used in this session
+        
+        // NEW: Conversation History Management (keep last 10 messages for context)
+        let conversationHistory = [];
+        const MAX_HISTORY_MESSAGES = 10;
 
         // Available models list
         const AVAILABLE_MODELS = [
@@ -1666,7 +1670,16 @@ print(result)
             }
 
             messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            // NEW: Smooth scroll with delay for rendering
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {  // Double RAF for better reliability
+                    messagesDiv.scrollTo({
+                        top: messagesDiv.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                });
+            });
 
             return messageId;
         }
@@ -2029,7 +2042,18 @@ print(result)
             const message = input.value.trim();
             if (!message) return;
 
-            // Add user message
+            // NEW: Add user message to conversation history
+            conversationHistory.push({
+                role: 'user',
+                content: message
+            });
+            
+            // Keep only last MAX_HISTORY_MESSAGES
+            if (conversationHistory.length > MAX_HISTORY_MESSAGES) {
+                conversationHistory = conversationHistory.slice(-MAX_HISTORY_MESSAGES);
+            }
+
+            // Add user message to UI
             addMessageToChat('user', message);
             input.value = '';
 
@@ -2042,7 +2066,8 @@ print(result)
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: message,
-                        use_memory: true
+                        use_memory: true,
+                        conversation_history: conversationHistory  // NEW: Send history!
                     })
                 });
 
@@ -2050,6 +2075,18 @@ print(result)
 
                 // Update loading message with actual response
                 const responseText = data.response || data.error || 'אין תשובה';
+                
+                // NEW: Add Zero's response to conversation history
+                conversationHistory.push({
+                    role: 'zero',
+                    content: responseText
+                });
+                
+                // Keep only last MAX_HISTORY_MESSAGES
+                if (conversationHistory.length > MAX_HISTORY_MESSAGES) {
+                    conversationHistory = conversationHistory.slice(-MAX_HISTORY_MESSAGES);
+                }
+                
                 document.getElementById(loadingId).innerHTML = `
                     <div class="message-header">🤖 Zero Agent</div>
                     ${responseText}
