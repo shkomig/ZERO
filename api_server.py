@@ -73,6 +73,15 @@ try:
 except:
     CODE_EXECUTOR_AVAILABLE = False
 
+# Import Agent Orchestrator
+try:
+    from zero_agent.agent_orchestrator import AgentOrchestrator
+    from zero_agent.safety_layer import SafetyLayer, Action
+    AGENT_ORCHESTRATOR_AVAILABLE = True
+except:
+    AGENT_ORCHESTRATOR_AVAILABLE = False
+    print("[API] WARNING: Agent Orchestrator not available")
+
 # Import faster-whisper for voice transcription
 try:
     from faster_whisper import WhisperModel
@@ -191,6 +200,8 @@ class ZeroAgent:
         self.executor = None
         self.memory = None
         self.code_executor = None
+        self.agent_orchestrator = None
+        self.safety_layer = None
         self.initialized = False
     
     def initialize(self):
@@ -235,6 +246,26 @@ class ZeroAgent:
             except Exception as e:
                 print(f"[API] WARNING Code executor unavailable: {e}")
                 self.code_executor = None
+        
+        # Initialize Agent Orchestrator
+        if AGENT_ORCHESTRATOR_AVAILABLE:
+            try:
+                # Create tools dict for orchestrator
+                tools_dict = {}
+                if self.code_executor:
+                    tools_dict['execute_python'] = self.code_executor
+                    tools_dict['execute_bash'] = self.code_executor
+                
+                self.safety_layer = SafetyLayer()
+                self.agent_orchestrator = AgentOrchestrator(
+                    llm=self.llm,
+                    tools=tools_dict
+                )
+                print("[API] OK Agent Orchestrator ready")
+            except Exception as e:
+                print(f"[API] WARNING Agent Orchestrator unavailable: {e}")
+                self.agent_orchestrator = None
+                self.safety_layer = None
         
         self.initialized = True
         print("[API] SUCCESS Zero Agent ready!\n")
