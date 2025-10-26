@@ -362,7 +362,16 @@ async def chat(request: ChatRequest):
         search_results = ""
         action_result = None
         
-        if any(keyword in request.message.lower() for keyword in ['חפש ברשת', 'חפש', 'חיפוש', 'search', 'google', 'search for']):
+        # Detect search requests - expanded keywords
+        search_keywords = [
+            'חפש ברשת', 'חפש', 'חיפוש', 'חיפוש על', 
+            'search', 'google', 'search for',
+            'מה המחיר', 'מחיר של', 'מחיר מניית', 'price of',
+            'מה חדש', 'מה השעה', 'מה התאריך', 'what time', 'what date',
+            'איך לבנות', 'how to build', 'tutorial'
+        ]
+        
+        if any(keyword in request.message.lower() for keyword in search_keywords):
             if WEBSEARCH_AVAILABLE:
                 search_triggered = True
                 # Extract search query (everything after "search for" or similar)
@@ -377,24 +386,79 @@ async def chat(request: ChatRequest):
                 search_result = search_tool.search_simple(search_query)
                 search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
         
-        # Check for action requests
-        if any(keyword in request.message.lower() for keyword in ['צור תיקייה', 'create folder', 'עשה תיקייה', 'צר תיקיה', 'תיצור תיקייה']):
+        # Check for action requests - expanded support
+        action_keywords = [
+            'צור תיקייה', 'create folder', 'עשה תיקייה', 'צר תיקיה', 'תיצור תיקייה',
+            'פתח דפדפן', 'open browser', 'open chrome', 'פתח כרום',
+            'צור קובץ', 'create file', 'עשה קובץ',
+            'רשום הודעה', 'write message',
+            'הרץ פקודה', 'run command'
+        ]
+        
+        if any(keyword in request.message.lower() for keyword in action_keywords):
             if zero.code_executor:
                 try:
                     from pathlib import Path
-                    # Extract folder name
-                    words = request.message.split()
-                    for i, word in enumerate(words):
-                        if 'תיקייה' in word or 'folder' in word.lower():
-                            folder_name = ' '.join(words[i+1:]) if i+1 < len(words) else 'new_folder'
-                            break
-                    else:
-                        folder_name = 'new_folder'
+                    import subprocess
+                    import os
                     
-                    workspace = Path("workspace")
-                    new_dir = workspace / folder_name
-                    new_dir.mkdir(parents=True, exist_ok=True)
-                    action_result = f"✅ Created directory: {new_dir}"
+                    # Create folder action
+                    if any(kw in request.message.lower() for kw in ['צור תיקייה', 'create folder', 'עשה תיקייה']):
+                        # Extract folder name
+                        words = request.message.split()
+                        folder_name = None
+                        for i, word in enumerate(words):
+                            if 'תיקייה' in word or 'folder' in word.lower():
+                                folder_name = ' '.join(words[i+1:]) if i+1 < len(words) else 'new_folder'
+                                break
+                        
+                        # Support for C: drive
+                        if 'c:' in request.message.lower() or 'כונן c' in request.message.lower():
+                            folder_name = 'new_folder' if not folder_name else folder_name
+                            new_dir = Path("C:/") / folder_name
+                        else:
+                            folder_name = folder_name if folder_name else 'new_folder'
+                            workspace = Path("workspace")
+                            new_dir = workspace / folder_name
+                        
+                        new_dir.mkdir(parents=True, exist_ok=True)
+                        action_result = f"✅ Created directory: {new_dir}"
+                    
+                    # Open browser action
+                    elif any(kw in request.message.lower() for kw in ['פתח דפדפן', 'open browser', 'open chrome', 'פתח כרום']):
+                        # Extract URL if provided
+                        url = None
+                        if 'http' in request.message.lower():
+                            import re
+                            urls = re.findall(r'https?://[^\s]+', request.message)
+                            url = urls[0] if urls else None
+                        
+                        if url:
+                            subprocess.Popen(['start', url], shell=True)
+                            action_result = f"✅ Opened browser with URL: {url}"
+                        else:
+                            subprocess.Popen(['start', 'chrome'], shell=True)
+                            action_result = "✅ Opened browser"
+                    
+                    # Create file action
+                    elif any(kw in request.message.lower() for kw in ['צור קובץ', 'create file', 'עשה קובץ']):
+                        # Extract filename
+                        words = request.message.split()
+                        filename = 'new_file.txt'
+                        for i, word in enumerate(words):
+                            if 'קובץ' in word or 'file' in word.lower():
+                                filename = ' '.join(words[i+1:]) if i+1 < len(words) else 'new_file.txt'
+                                break
+                        
+                        # Support for C: drive
+                        if 'c:' in request.message.lower():
+                            file_path = Path("C:/") / filename
+                        else:
+                            file_path = Path("workspace") / filename
+                        
+                        file_path.touch()
+                        action_result = f"✅ Created file: {file_path}"
+                    
                 except Exception as e:
                     action_result = f"❌ Error: {str(e)}"
         
