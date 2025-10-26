@@ -344,7 +344,8 @@ async def root():
             "memory": MEMORY_AVAILABLE and zero.memory is not None,
             "gmail": GMAIL_AVAILABLE,
             "calendar": CALENDAR_AVAILABLE,
-            "database": DATABASE_AVAILABLE
+            "database": DATABASE_AVAILABLE,
+            "agent_system": AGENT_ORCHESTRATOR_AVAILABLE and zero.agent_orchestrator is not None
         },
         "endpoints": {
             "chat": "/api/chat",
