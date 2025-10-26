@@ -411,62 +411,65 @@ async def chat(request: ChatRequest):
             try:
                 prefs = zero.memory.short_term.get_all_preferences()
                 if prefs:
-                    # Build a detailed instruction based on preferences
-                    role = prefs.get('role_relationship', 'assistant')
-                    style = prefs.get('conversation_style', 'professional')
-                    length = prefs.get('response_length', 'moderate')
+                    # Based on llm-concise-guide.md - Best Practices for Concise Responses
+                    # Using: Few-Shot + Temperature Control + Max Tokens + Clear Structure
                     
-                    length_instruction = "Keep responses concise and to the point (2-3 sentences max)" if length == "concise" else "Provide detailed responses when needed"
-                    
-                    # Based on llm-instructions-shay.md best practices
-                    preferences = f"""אתה Zero - עוזר AI בעברית. תפקידך: עוזר קידוד והתפתחות טכנולוגית.
+                    preferences = """# אתה Zero - עוזר AI תמציתי בעברית
 
-עקרונות עבודה:
-- עונה בעברית, בבירור וברגישות
-- ממוקד - תשובות קצרות (1-3 משפטים) אלא אם מתבקש אחרת
-- מעשי - מתמקד בפתרונות ולעשייה
-- לא חוזר על ברכות - ממשיך את השיחה באופן טבעי
+## כללים קריטיים - תמציתיות
+- ענה במשפט אחד בלבד (מקסימום 2 משפטים)
+- מקסימום 40 מילים - חסום את עצמך
+- ללא הקדמות, ללא סיכומים
+- ישיר לעניין - no fluff
 
-דוגמאות לתשובות טובות:
-User: "מה זה machine learning?"
-Assistant: "AI שמאפשר למחשבים ללמוד מנתונים. כולל supervised learning (עם תגיות), unsupervised (ללא תגיות) ו-reinforcement (למידה מתוך ניסיון)."
+## דוגמאות נכונות (תמציתיות)
 
-User: "צור תיקייה test"
-Assistant: "✅ נוצרה התיקייה test"
+ש: מה זה Python?
+ת: שפת תכנות רב-תכליתית לפיתוח אפליקציות.
 
-User: "היי"
-Assistant: "היי, מה עובר עליך?"
+ש: מה זה Docker?
+ת: כלי לניהול קונטיינרים של אפליקציות.
 
-כללים:
-1. שאלה פשוטה → תשובה קצרה (1-2 משפטים)
-2. ללא התחלות כמו "בואו נצלול" או "הנה איך"
-3. ללא נקודות אלא אם מתבקש מפורשות
-4. המשכיות בשיחה - הבנה של הקשר קודם"""
+ש: צור תיקייה test
+ת: ✅ נוצר test/
+
+ש: מה זה machine learning?
+ת: AI שמאפשר למחשבים ללמוד מנתונים ללא תכנות מפורש.
+
+## דוגמה שגויה - אל תעשה כך
+ש: מה זה Docker?
+ת: Docker הוא פלטפורמה מתקדמת שפותחה בשנת 2013 על ידי חברת Docker Inc., והיא מאפשרת... [ארוך מדי! 150+ מילים]
+
+---
+
+כל תשובה: משפט אחד בלבד, ישיר, תמציתי."""
             except:
                 pass
         
-        # Prepare prompt with system instruction and user message
-        # Format: System instruction + Context + User message
+        # Build prompt with modular architecture (from llm-concise-guide.md)
+        # Structure: Role + Constraints + Format + Task (for better instruction following)
         prompt = ""
         
-        # 1. System instruction (from preferences) - Should be strong and clear
+        # 1. Role and constraints (from preferences) - at the start for clarity
         if preferences:
-            prompt += f"SYSTEM INSTRUCTION:\n{preferences}\n\n"
+            prompt += f"{preferences}\n\n"
         
-        # 2. Context (conversation history, preferences, facts)
-        if context:
-            prompt += f"CONTEXT:\n{context}\n\n"
+        # 2. Context (conversation history) - if exists
+        if context and request.use_memory:
+            prompt += f"## הקשר מהשיחה הקודמת:\n{context}\n\n"
         
-        # 3. User message
-        prompt += f"USER: {request.message}\n\nASSISTANT:"
-        
-        # Add search results if available
+        # 3. Additional info (search results, actions)
+        extra_info = ""
         if search_triggered and search_results:
-            prompt += search_results
-        
-        # Add action result if available
+            extra_info += f"\nמידע נוסף מהרשת:\n{search_results}\n"
         if action_result:
-            prompt += f"\n\nAction completed: {action_result}\n"
+            extra_info += f"\nפעולה שבוצעה: {action_result}\n"
+        
+        if extra_info:
+            prompt += extra_info + "\n"
+        
+        # 4. User message - clear and direct
+        prompt += f"ש: {request.message}\nת: "
         
         # Get routing decision
         if request.model:

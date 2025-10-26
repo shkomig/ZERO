@@ -196,14 +196,19 @@ class StreamingMultiModelLLM:
         
         try:
             url = f"{self.base_url}/api/generate"
+            # Apply concise-guide best practices:
+            # Low temperature (0.3) for focused, shorter responses
+            # Limited tokens (200) as hard cap for conciseness
+            # Repetition penalty to reduce verbosity
             payload = {
                 "model": model_name,
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "num_predict": max_tokens,
+                    "num_predict": 200,  # Hard limit for conciseness
                     "num_ctx": 8192,  # Context window size
-                    "temperature": 0.7
+                    "temperature": 0.3,  # Lower = more focused, shorter responses
+                    "repeat_penalty": 1.1  # Penalize repetition (reduces verbose)
                 }
             }
             
