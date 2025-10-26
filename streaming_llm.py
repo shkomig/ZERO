@@ -200,6 +200,10 @@ class StreamingMultiModelLLM:
             # Low temperature (0.3) for focused, shorter responses
             # Limited tokens (200) as hard cap for conciseness
             # Repetition penalty to reduce verbosity
+            
+            # For DeepSeek-R1, add stop sequences to prevent thinking tokens
+            stop_sequences = ["<think>", "</think>", "<think>", "</think>"]
+            
             payload = {
                 "model": model_name,
                 "prompt": prompt,
@@ -208,7 +212,8 @@ class StreamingMultiModelLLM:
                     "num_predict": 200,  # Hard limit for conciseness
                     "num_ctx": 8192,  # Context window size
                     "temperature": 0.3,  # Lower = more focused, shorter responses
-                    "repeat_penalty": 1.1  # Penalize repetition (reduces verbose)
+                    "repeat_penalty": 1.1,  # Penalize repetition (reduces verbose)
+                    "stop": stop_sequences  # Stop at thinking tags
                 }
             }
             

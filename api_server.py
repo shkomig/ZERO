@@ -480,7 +480,41 @@ async def chat(request: ChatRequest):
             # Auto-route
             routing = zero.router.route_with_reasoning(request.message)
             model = routing['model']
-            response = zero.llm.generate(prompt, model=model)
+            
+            # For DeepSeek-R1 (smart model), enhance with Chain-of-Thought
+            if model == "smart":
+                # Check if it's a complex reasoning task
+                complex_keywords = ['למה', 'איך', 'בצע', 'פתור', 'תכנן', 'מיישם', 
+                                    'why', 'how', 'solve', 'implement', 'plan',
+                                    'analyz', 'explain', 'compare', 'evalu']
+                
+                is_complex = any(keyword in request.message.lower() for keyword in complex_keywords)
+                
+                if is_complex:
+                    # Add CoT instruction to prompt for R1
+                    cot_instruction = """
+
+שים לב: אתה DeepSeek-R1 עם יכולות Chain-of-Thought משופרות.
+לשאלות מורכבות - חשוב שלב אחר שלב אך ענה תמציתי:
+1. זהה את הבעיה
+2. הצג פתרון
+3. תמצת למשפט אחד
+
+חזור לתשובה תמציתית:"""
+                    
+                    # Insert CoT after preferences but before context
+                    prompt = prompt.replace("---\n\nכל תשובה:", cot_instruction + "\n\n---\n\nכל תשובה:")
+                
+                # For R1, add stop sequences to remove thinking tokens
+                response = zero.llm.generate(prompt, model=model)
+                
+                # Post-process to remove thinking tags if present
+                if "<think>" in response or "</think>" in response:
+                    import re
+                    response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL)
+                    
+            else:
+                response = zero.llm.generate(prompt, model=model)
         
         # Remember conversation
         if zero.memory:
