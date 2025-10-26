@@ -449,14 +449,17 @@ async def chat(request: ChatRequest):
         search_keywords = [
             'חפש ברשת', 'חפש', 'חיפוש', 'חיפוש על', 
             'search', 'google', 'search for',
-            'מה המחיר', 'מחיר של', 'מחיר מניית', 'price of',
+            'מה המחיר', 'מחיר של', 'מחיר מניית', 'price of', 'price', 'stock price',
+            'spy', 'qqq', 'aapl', 'tsla', 'msft', 'amzn', 'googl',  # Popular stocks
             'מה חדש', 'מה השעה', 'מה התאריך', 'what time', 'what date',
             'איך לבנות', 'how to build', 'tutorial'
         ]
         
         if any(keyword in request.message.lower() for keyword in search_keywords):
+            print(f"[API] Search keyword detected in: {request.message}")
             if WEBSEARCH_AVAILABLE:
                 search_triggered = True
+                print(f"[API] Triggering Enhanced WebSearch...")
                 # Extract search query (everything after "search for" or similar)
                 search_query = request.message
                 for trigger in ['חפש ברשת', 'חפש', 'חיפוש על', 'search for', 'google']:
