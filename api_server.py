@@ -745,6 +745,10 @@ async def chat(request: ChatRequest, http_request: Request):
         # 4. User message - clear and direct
         prompt += f"ש: {request.message}\nת: "
         
+        # DEBUG: Print first and last 500 chars of prompt
+        print(f"[Prompt Debug] First 500 chars:\n{prompt[:500]}\n")
+        print(f"[Prompt Debug] Last 500 chars:\n{prompt[-500:]}\n")
+        
         # Get routing decision
         if request.model:
             # Forced model
