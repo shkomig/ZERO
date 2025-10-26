@@ -7,6 +7,7 @@ Tool for searching the web and getting results
 import requests
 from typing import Dict, Any, List, Optional
 import json
+from datetime import datetime
 
 
 class WebSearchTool:
@@ -18,10 +19,12 @@ class WebSearchTool:
     def __init__(self):
         self.base_url = "https://api.duckduckgo.com/"
         self.last_results = []
+        # Try to use DuckDuckGo HTML search for more results
+        self.ddg_html_url = "https://html.duckduckgo.com/html/"
         
     def search(self, query: str, max_results: int = 5) -> Dict[str, Any]:
         """
-        Search the web
+        Search the web using DuckDuckGo
         
         Args:
             query: Search query
@@ -31,40 +34,44 @@ class WebSearchTool:
             Search results
         """
         try:
-            # DuckDuckGo Instant Answer API
+            # Use DuckDuckGo HTML search for better, more current results
             params = {
-                "q": query,
-                "format": "json",
-                "no_html": 1,
-                "skip_disambig": 1
+                "q": query
             }
             
-            response = requests.get(self.base_url, params=params, timeout=10)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            response = requests.get(self.ddg_html_url, params=params, headers=headers, timeout=15)
             response.raise_for_status()
             
-            data = response.json()
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html.parser')
             
-            # Extract results
             results = []
             
-            # Abstract (main answer)
-            if data.get("Abstract"):
-                results.append({
-                    "title": data.get("Heading", "Summary"),
-                    "snippet": data.get("Abstract", ""),
-                    "url": data.get("AbstractURL", ""),
-                    "type": "abstract"
-                })
+            # Find search result links
+            result_links = soup.find_all('a', class_='result__a')
             
-            # Related topics
-            for topic in data.get("RelatedTopics", [])[:max_results]:
-                if isinstance(topic, dict) and "Text" in topic:
-                    results.append({
-                        "title": topic.get("Text", "")[:100],
-                        "snippet": topic.get("Text", ""),
-                        "url": topic.get("FirstURL", ""),
-                        "type": "related"
-                    })
+            for i, link in enumerate(result_links[:max_results]):
+                title = link.text.strip()
+                url = link.get('href', '')
+                
+                # Find snippet from parent
+                parent = link.find_parent('div', class_='result')
+                snippet = ""
+                if parent:
+                    snippet_elem = parent.find('a', class_='result__snippet')
+                    if snippet_elem:
+                        snippet = snippet_elem.text.strip()
+                
+                results.append({
+                    "title": title,
+                    "snippet": snippet,
+                    "url": url,
+                    "type": "web_result"
+                })
             
             self.last_results = results
             
@@ -76,11 +83,56 @@ class WebSearchTool:
             }
             
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "query": query
-            }
+            # Fallback to old method if beautifulsoup fails
+            try:
+                params = {
+                    "q": query,
+                    "format": "json",
+                    "no_html": 1,
+                    "skip_disambig": 1
+                }
+                
+                response = requests.get(self.base_url, params=params, timeout=10)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Extract results
+                results = []
+                
+                # Abstract (main answer)
+                if data.get("Abstract"):
+                    results.append({
+                        "title": data.get("Heading", "Summary"),
+                        "snippet": data.get("Abstract", ""),
+                        "url": data.get("AbstractURL", ""),
+                        "type": "abstract"
+                    })
+                
+                # Related topics
+                for topic in data.get("RelatedTopics", [])[:max_results]:
+                    if isinstance(topic, dict) and "Text" in topic:
+                        results.append({
+                            "title": topic.get("Text", "")[:100],
+                            "snippet": topic.get("Text", ""),
+                            "url": topic.get("FirstURL", ""),
+                            "type": "related"
+                        })
+                
+                self.last_results = results
+                
+                return {
+                    "success": True,
+                    "query": query,
+                    "results": results,
+                    "count": len(results)
+                }
+            except Exception as e2:
+                return {
+                    "success": False,
+                    "error": f"Primary: {str(e)}, Fallback: {str(e2)}",
+                    "query": query
+                }
     
     def search_simple(self, query: str) -> str:
         """

@@ -11,10 +11,15 @@
             box-sizing: border-box;
         }
 
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
+            font-family: 'Inter', sans-serif;
+            background: #0A0F1F;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 191, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(51, 255, 255, 0.03) 0%, transparent 50%);
+            color: #E0F7FF;
             height: 100vh;
             overflow: hidden;
         }
@@ -27,29 +32,38 @@
         /* Sidebar */
         .sidebar {
             width: 280px;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 22, 41, 0.95);
             backdrop-filter: blur(10px);
             padding: 20px;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.1);
+            border-right: 1px solid rgba(0, 122, 204, 0.2);
         }
 
         .logo {
             text-align: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #00d9ff;
         }
 
         .logo h1 {
-            color: #667eea;
-            font-size: 28px;
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(90deg, #00BFFF, #33FFFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 32px;
+            font-weight: 700;
             margin-bottom: 5px;
+            text-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+            letter-spacing: 2px;
         }
 
         .logo p {
-            color: #666;
-            font-size: 12px;
+            color: #A0C8FF;
+            font-size: 13px;
+            font-weight: 500;
         }
 
         .nav-item {
@@ -64,14 +78,16 @@
         }
 
         .nav-item:hover {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(90deg, #00BFFF, #007ACC);
+            color: #E0F7FF;
             transform: translateX(-5px);
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.4);
         }
 
         .nav-item.active {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(90deg, #00BFFF, #007ACC);
+            color: #E0F7FF;
+            box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
         }
 
         .nav-item .icon {
@@ -88,12 +104,13 @@
         }
 
         .header {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 22, 41, 0.9);
             backdrop-filter: blur(10px);
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 16px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0, 191, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 191, 255, 0.1);
         }
 
         .search-bar {
@@ -107,17 +124,18 @@
 
         .search-bar:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #00d9ff;
             box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
         }
 
         .content-area {
             display: none;
-            background: rgba(255, 255, 255, 0.95);
+            background: #0F1629;
             backdrop-filter: blur(10px);
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 191, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 191, 255, 0.08);
             animation: fadeIn 0.3s;
         }
 
@@ -131,9 +149,13 @@
         }
 
         .content-area h2 {
-            color: #667eea;
+            font-family: 'Orbitron', sans-serif;
+            color: #33FFFF;
             margin-bottom: 20px;
             font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(51, 255, 255, 0.4);
         }
 
         /* Chat Interface */
@@ -167,15 +189,16 @@
         }
 
         .message.user {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(90deg, #00BFFF, #007ACC);
+            color: #E0F7FF;
             margin-left: auto;
             text-align: right;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.3);
         }
 
         .message.zero {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: #0F1629;
+            border: 1px solid rgba(0, 191, 255, 0.2);
         }
 
         .message-header {
@@ -203,18 +226,20 @@
 
         .send-btn {
             padding: 12px 30px;
-            background: #667eea;
-            color: white;
+            background: linear-gradient(90deg, #00BFFF, #007ACC);
+            color: #E0F7FF;
             border: none;
-            border-radius: 25px;
+            border-radius: 12px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.4);
         }
 
         .send-btn:hover {
-            background: #5568d3;
-            transform: scale(1.05);
+            background: #33FFFF;
+            box-shadow: 0 0 25px rgba(51, 255, 255, 0.6);
+            transform: scale(1.05) translateY(-2px);
         }
 
         /* Code Editor */
@@ -225,7 +250,7 @@
         }
 
         .code-toolbar {
-            background: #667eea;
+            background: #00d9ff;
             color: white;
             padding: 10px 15px;
             display: flex;
@@ -236,7 +261,7 @@
         .code-run-btn {
             padding: 8px 20px;
             background: white;
-            color: #667eea;
+            color: #00d9ff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -270,7 +295,7 @@
         }
 
         .email-item:hover {
-            border-color: #667eea;
+            border-color: #00d9ff;
             transform: translateX(-5px);
         }
 
@@ -282,7 +307,7 @@
 
         .email-from {
             font-weight: bold;
-            color: #667eea;
+            color: #00d9ff;
         }
 
         .email-date {
@@ -318,12 +343,12 @@
         }
 
         .calendar-day:hover {
-            border-color: #667eea;
+            border-color: #00d9ff;
             background: #f0f0ff;
         }
 
         .calendar-day.today {
-            background: #667eea;
+            background: #00d9ff;
             color: white;
             border-color: #5568d3;
         }
@@ -351,7 +376,7 @@
 
         .execute-btn {
             padding: 12px 30px;
-            background: #667eea;
+            background: #00d9ff;
             color: white;
             border: none;
             border-radius: 10px;
@@ -369,7 +394,7 @@
         }
 
         .result-table th {
-            background: #667eea;
+            background: #00d9ff;
             color: white;
             padding: 15px;
             text-align: right;
@@ -393,11 +418,13 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #00BFFF, #007ACC);
+            color: #E0F7FF;
             padding: 25px;
-            border-radius: 15px;
+            border-radius: 16px;
             text-align: center;
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.3);
         }
 
         .stat-value {
@@ -426,7 +453,9 @@
         .loading {
             text-align: center;
             padding: 20px;
-            color: #667eea;
+            color: #00BFFF;
+            font-weight: 500;
+            text-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
         }
 
         .loading::after {
@@ -439,6 +468,41 @@
             40% { content: '..'; }
             60%, 100% { content: '...'; }
         }
+
+        /* Saved Conversations */
+        .saved-conversation {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .saved-conversation:hover {
+            border-color: #00d9ff;
+            transform: translateX(-5px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .conv-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00d9ff;
+            margin-bottom: 5px;
+        }
+
+        .conv-date {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .conv-preview {
+            font-size: 13px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -446,6 +510,7 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="logo">
+                <img src="zero%20logo/generated-image.png" alt="Zero Logo" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; object-fit: cover;">
                 <h1>🚀 Zero</h1>
                 <p>AI Agent Platform</p>
             </div>
@@ -478,6 +543,10 @@
                 <span class="icon">🔍</span>
                 <span>סקירת פרויקט</span>
             </div>
+            <div class="nav-item" onclick="showContent('saved-conversations')">
+                <span class="icon">📚</span>
+                <span>שיחות שמורות</span>
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -489,6 +558,10 @@
             <!-- Chat Interface -->
             <div id="chat" class="content-area active">
                 <h2>💬 שיחה עם Zero</h2>
+                <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+                    <button class="send-btn" onclick="copyConversation()" style="background: #28a745;">📋 העתק שיחה</button>
+                    <button class="send-btn" onclick="saveConversation()" style="background: #ffc107; color: #333;">💾 שמור שיחה</button>
+                </div>
                 <div class="chat-container">
                     <div class="chat-messages" id="chatMessages">
                         <div class="message zero">
@@ -498,8 +571,15 @@
                     </div>
                     <div class="chat-input-area">
                         <input type="text" class="chat-input" id="chatInput" placeholder="הקלד הודעה..." onkeypress="handleChatInput(event)">
+                        <button class="send-btn" onclick="toggleRecording()" id="micBtn" style="background: #e91e63; margin-right: 10px;" title="הקלט דיבור (נדרש localhost)">🎤 הקלט</button>
+                        <button class="send-btn" onclick="stopConversation()" id="stopBtn" style="background: #dc3545; margin-right: 10px; display: none;" title="עצור שיחה">⏹️ עצור</button>
+                        <button class="send-btn" onclick="toggleStreaming()" id="streamBtn" style="background: #7c3aed; margin-right: 10px;" title="Streaming Mode">📡 Streaming</button>
                         <button class="send-btn" onclick="sendMessage()" id="sendBtn">שלח</button>
-                        <button class="send-btn" onclick="toggleStreaming()" id="streamBtn" style="background: #764ba2; margin-right: 10px;" title="Streaming Mode">📡 Streaming</button>
+                    </div>
+                    <div id="micWarning" style="display: none; padding: 10px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; margin-top: 10px; color: #856404;">
+                        <strong>⚠️ גישה למיקרופון זמינה רק דרך localhost:</strong><br>
+                        פתח את הממשק דרך: <code>http://localhost:8080/zero_web_interface.html</code><br>
+                        או פשוט הקלד את ההודעה בשדה הטקסט ↑
                     </div>
                 </div>
             </div>
@@ -599,12 +679,193 @@ print(result)
 
                 <div id="projectReviewResults" style="margin-top: 30px;"></div>
             </div>
+
+            <!-- Saved Conversations -->
+            <div id="saved-conversations" class="content-area">
+                <h2>📚 שיחות שמורות</h2>
+                <div id="conversationsList" style="margin-top: 20px;"></div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', loadSavedConversations);
+                </script>
+            </div>
         </div>
     </div>
 
     <script>
         const API_URL = 'http://localhost:8080';
         let streamingMode = false;
+        let allModelsUsed = {}; // Track all models used in this session
+
+        // Available models list
+        const AVAILABLE_MODELS = [
+            'fast',
+            'DeepSeek-R1-32B',
+            'Llama-3.1-8B',
+            'Qwen-2.5-Coder-32B'
+        ];
+
+        // Voice recording variables
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        // Voice Recording Functions
+        async function toggleRecording() {
+            if (!isRecording) {
+                // Start recording
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        await transcribeAudio(audioBlob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    
+                    const micBtn = document.getElementById('micBtn');
+                    micBtn.style.background = '#dc3545';
+                    micBtn.innerHTML = '⏹️ עצור הקלטה';
+                    micBtn.title = 'עצור הקלטה';
+                } catch (error) {
+                    console.error('Error starting recording:', error);
+                    // Show warning message
+                    document.getElementById('micWarning').style.display = 'block';
+                    alert('❌ גישה למיקרופון זמינה רק דרך localhost\n\nפתח את הממשק דרך: http://localhost:8080/zero_web_interface.html');
+                }
+            } else {
+                // Stop recording
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    
+                    const micBtn = document.getElementById('micBtn');
+                    micBtn.style.background = '#e91e63';
+                    micBtn.innerHTML = '🎤 הקלט';
+                    micBtn.title = 'הקלט דיבור';
+                }
+            }
+        }
+
+        // Transcribe audio using Whisper API
+        async function transcribeAudio(audioBlob) {
+            try {
+                // Convert audio to base64
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                
+                reader.onloadend = async () => {
+                    const base64Audio = reader.result.split(',')[1]; // Remove data:audio/wav;base64, prefix
+                    
+                    try {
+                        const response = await fetch(`${API_URL}/api/voice/transcribe`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                audio_base64: base64Audio,
+                                language: 'he'
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.text) {
+                            // Show transcribed text in input
+                            document.getElementById('chatInput').value = data.text;
+                            addMessageToChat('user', `🎤 ${data.text}`);
+                            
+                            // Automatically send to Zero
+                            await sendMessageWithText(data.text);
+                        }
+                    } catch (error) {
+                        console.error('Transcription error:', error);
+                        alert('שגיאה בהמרת דיבור לטקסט');
+                    }
+                };
+            } catch (error) {
+                console.error('Error processing audio:', error);
+                alert('שגיאה בעיבוד השמע');
+            }
+        }
+
+        // Send message with specific text
+        async function sendMessageWithText(text) {
+            if (!text.trim()) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        use_memory: true
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Add response
+                addMessageToChat('zero', data.response + getModelInfoDisplay(data.model_used, true));
+                
+                // Speak response using Web Speech API
+                speakText(data.response);
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('שגיאה בשליחת הודעה');
+            }
+        }
+
+        // Text-to-Speech using Web Speech API
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) {
+                console.log('Text-to-Speech not supported');
+                return;
+            }
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'he-IL'; // Hebrew
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            speechSynthesis.speak(utterance);
+        }
+
+        // Function to get model info display
+        function getModelInfoDisplay(modelName, showAllModels = false) {
+            if (!modelName) return '';
+            
+            // Track this model as used
+            allModelsUsed[modelName] = (allModelsUsed[modelName] || 0) + 1;
+            
+            let display = `<div style="font-size: 10px; margin-top: 8px; opacity: 0.7; padding: 8px; background: rgba(0,217,255,0.1); border-radius: 5px; border-left: 3px solid #00d9ff;">📊 מודל בשימוש: <strong>${modelName}</strong>`;
+            
+            // Show all available models for this session
+            if (showAllModels) {
+                const otherModels = AVAILABLE_MODELS.filter(m => m !== modelName);
+                if (otherModels.length > 0) {
+                    display += '<br>🔧 מודלים זמינים: ' + otherModels.join(', ');
+                }
+                
+                // Show how many times each model was used in this session
+                const usedModels = Object.keys(allModelsUsed).filter(m => allModelsUsed[m] > 0);
+                if (usedModels.length > 1) {
+                    const usageStats = usedModels.map(m => `${m} (${allModelsUsed[m]}x)`).join(', ');
+                    display += '<br>📈 סטטיסטיקות: ' + usageStats;
+                }
+            }
+            
+            display += '</div>';
+            return display;
+        }
 
         // Navigation
         function showContent(contentId) {
@@ -623,6 +884,8 @@ print(result)
                 initCalendar();
             } else if (contentId === 'memory') {
                 loadMemoryStats();
+            } else if (contentId === 'saved-conversations') {
+                loadSavedConversations();
             }
         }
 
@@ -693,7 +956,7 @@ print(result)
                 outputDiv.innerHTML = `
                     <strong>פלט:</strong><br>
                     <pre>${data.response || 'No output'}</pre>
-                    ${data.model_used ? `<div style="font-size: 11px; margin-top: 10px; opacity: 0.6;">📊 מודל: ${data.model_used}</div>` : ''}
+                    ${getModelInfoDisplay(data.model_used, true)}
                 `;
             } catch (error) {
                 outputDiv.innerHTML = `<strong>שגיאה:</strong> ${error.message}`;
@@ -765,7 +1028,7 @@ print(result)
                 
                 // Add event indicators
                 if (eventsMap.has(day)) {
-                    dayContent += `<div style="font-size: 10px; margin-top: 5px; color: #667eea;">📅 ${eventsMap.get(day).length}</div>`;
+                    dayContent += `<div style="font-size: 10px; margin-top: 5px; color: #00d9ff;">📅 ${eventsMap.get(day).length}</div>`;
                 }
                 
                 dayDiv.innerHTML = dayContent;
@@ -885,7 +1148,7 @@ print(result)
                         <hr style="margin: 15px 0; border: none; border-top: 1px solid #ddd;">
                         <p style="font-size: 13px; margin-bottom: 10px;"><strong>כדי לטעון אימיילים:</strong></p>
                         <ol style="font-size: 12px; padding-right: 20px; line-height: 1.8;">
-                            <li>לך ל-<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #667eea;">Google Cloud Console</a></li>
+                            <li>לך ל-<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #00d9ff;">Google Cloud Console</a></li>
                             <li>צור OAuth 2.0 Client ID</li>
                             <li>הורד את הקובץ כ-credentials.json</li>
                             <li>שים אותו בתיקייה: C:\\AI-ALL-PRO\\ZERO\\</li>
@@ -899,6 +1162,9 @@ print(result)
         }
 
         // Streaming Functions
+        let isStreamingActive = false;
+        let currentStreamingInterval = null;
+
         function toggleStreaming() {
             streamingMode = !streamingMode;
             const btn = document.getElementById('streamBtn');
@@ -906,9 +1172,101 @@ print(result)
                 btn.style.background = '#28a745';
                 btn.textContent = '✓ Streaming ON';
             } else {
-                btn.style.background = '#764ba2';
+                btn.style.background = '#7c3aed';
                 btn.textContent = '📡 Streaming';
             }
+        }
+
+        function stopConversation() {
+            if (currentStreamingInterval) {
+                clearInterval(currentStreamingInterval);
+                currentStreamingInterval = null;
+            }
+            isStreamingActive = false;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('sendBtn').style.display = 'inline-block';
+        }
+
+        function copyConversation() {
+            const chatMessages = document.querySelectorAll('.message');
+            let conversationText = '';
+            
+            chatMessages.forEach(msg => {
+                const header = msg.querySelector('.message-header');
+                const content = msg.textContent;
+                if (header) {
+                    conversationText += header.textContent + '\n';
+                }
+                conversationText += content.replace(/.*message-header.*\n/, '') + '\n\n';
+            });
+            
+            navigator.clipboard.writeText(conversationText).then(() => {
+                alert('✅ השיחה הועתקה ללוח');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('❌ לא הצלחתי להעתיק את השיחה');
+            });
+        }
+
+        function saveConversation() {
+            const chatMessages = document.querySelectorAll('.message');
+            const conversation = {
+                timestamp: new Date().toISOString(),
+                messages: []
+            };
+            
+            chatMessages.forEach(msg => {
+                const isUser = msg.classList.contains('user-message');
+                const content = msg.textContent.replace(/.*message-header.*/, '').trim();
+                conversation.messages.push({
+                    role: isUser ? 'user' : 'zero',
+                    content: content,
+                    timestamp: new Date().toISOString()
+                });
+            });
+            
+            localStorage.setItem(`conversation_${Date.now()}`, JSON.stringify(conversation));
+            alert('✅ השיחה נשמרה!');
+            loadSavedConversations();
+        }
+
+        function loadSavedConversations() {
+            const conversationsList = document.getElementById('conversationsList');
+            if (!conversationsList) return;
+            
+            let conversations = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('conversation_')) {
+                    const conv = JSON.parse(localStorage.getItem(key));
+                    conversations.push({ key, ...conv });
+                }
+            }
+            
+            conversations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            conversationsList.innerHTML = conversations.map((conv, idx) => `
+                <div class="saved-conversation" onclick="loadConversation('${conv.key}')">
+                    <div class="conv-header">שיחה ${idx + 1}</div>
+                    <div class="conv-date">${new Date(conv.timestamp).toLocaleString('he-IL')}</div>
+                    <div class="conv-preview">${conv.messages.length} הודעות</div>
+                </div>
+            `).join('');
+        }
+
+        function loadConversation(key) {
+            const conv = JSON.parse(localStorage.getItem(key));
+            const chat = document.getElementById('chatMessages');
+            
+            if (!confirm('האם אתה בטוח? זה ימחק את השיחה הנוכחית.')) return;
+            
+            chat.innerHTML = '';
+            
+            conv.messages.forEach(msg => {
+                addMessageToChat(msg.role, msg.content);
+            });
+            
+            chat.scrollTop = chat.scrollHeight;
         }
 
         async function sendMessage() {
@@ -944,7 +1302,7 @@ print(result)
                 document.getElementById(loadingId).innerHTML = `
                     <div class="message-header">🤖 Zero Agent</div>
                     ${data.response || data.error || 'אין תשובה'}
-                    ${data.model_used ? `<div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">📊 מודל: ${data.model_used}</div>` : ''}
+                    ${getModelInfoDisplay(data.model_used, true)}
                 `;
 
             } catch (error) {
@@ -968,6 +1326,11 @@ print(result)
             // Add streaming message
             const streamingId = addMessageToChat('zero', '', 'streaming');
 
+            // Show stop button
+            isStreamingActive = true;
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            document.getElementById('sendBtn').style.display = 'none';
+
             try {
                 // Note: This would connect to WebSocket when implemented
                 // For now, use regular API but show it's streaming mode
@@ -987,7 +1350,12 @@ print(result)
                 let currentText = '';
                 let index = 0;
 
-                const streamingInterval = setInterval(() => {
+                currentStreamingInterval = setInterval(() => {
+                    if (!isStreamingActive) {
+                        clearInterval(currentStreamingInterval);
+                        return;
+                    }
+                    
                     if (index < text.length) {
                         currentText += text[index];
                         document.getElementById(streamingId).innerHTML = `
@@ -996,12 +1364,13 @@ print(result)
                         `;
                         index++;
                     } else {
-                        clearInterval(streamingInterval);
+                        clearInterval(currentStreamingInterval);
                         document.getElementById(streamingId).innerHTML = `
                             <div class="message-header">🤖 Zero Agent (Streaming Mode)</div>
                             ${currentText}
-                            ${data.model_used ? `<div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">📊 מודל: ${data.model_used}</div>` : ''}
+                            ${getModelInfoDisplay(data.model_used, true)}
                         `;
+                        stopConversation();
                     }
                 }, 10); // 10ms per character for smooth streaming effect
 
@@ -1011,6 +1380,7 @@ print(result)
                     <div class="message-header">❌ שגיאה</div>
                     לא הצלחתי להתחבר לשרת. ודא שהשרת רץ ב-${API_URL}
                 `;
+                stopConversation();
             }
         }
 
@@ -1065,9 +1435,9 @@ python api_server.py
                     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;padding:50px;overflow:auto;';
                     modal.innerHTML = `
                         <div style="background:white;padding:30px;border-radius:15px;max-width:800px;margin:0 auto;">
-                            <h2 style="color:#667eea;margin-bottom:20px;">📋 הוראות חיבור ל-Cursor</h2>
+                            <h2 style="color:#00d9ff;margin-bottom:20px;">📋 הוראות חיבור ל-Cursor</h2>
                             <pre style="background:#f5f5f5;padding:20px;border-radius:10px;overflow:auto;max-height:500px;">${cursorNote}</pre>
-                            <button onclick="this.closest('div[style*=background]').parentElement.remove()" style="margin-top:20px;padding:12px 30px;background:#667eea;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:bold;">סגור</button>
+                            <button onclick="this.closest('div[style*=background]').parentElement.remove()" style="margin-top:20px;padding:12px 30px;background:#00d9ff;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:bold;">סגור</button>
                         </div>
                     `;
                     document.body.appendChild(modal);
@@ -1122,39 +1492,78 @@ python api_server.py
                     
                     let html = `
                         <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                            <h3 style="color: #667eea; margin-bottom: 15px;">📊 סטטיסטיקות הפרויקט</h3>
+                            <h3 style="color: #00d9ff; margin-bottom: 15px;">📊 סטטיסטיקות הפרויקט</h3>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
                                 <div>
-                                    <div style="font-weight: bold; color: #667eea;">קבצים</div>
+                                    <div style="font-weight: bold; color: #00d9ff;">קבצים</div>
                                     <div style="font-size: 24px; font-weight: bold;">${result.stats.total_files}</div>
                                 </div>
                                 <div>
-                                    <div style="font-weight: bold; color: #667eea;">גודל</div>
+                                    <div style="font-weight: bold; color: #00d9ff;">גודל</div>
                                     <div style="font-size: 24px; font-weight: bold;">${result.stats.total_size_mb} MB</div>
                                 </div>
                                 <div>
-                                    <div style="font-weight: bold; color: #667eea;">סוג סקירה</div>
+                                    <div style="font-weight: bold; color: #00d9ff;">סוג סקירה</div>
                                     <div style="font-size: 14px;">${result.review_type}</div>
                                 </div>
                             </div>
                         </div>
 
                         <div style="background: white; padding: 25px; border-radius: 10px; border: 2px solid #e0e0e0;">
-                            <h3 style="color: #667eea; margin-bottom: 15px;">💡 חוות דעת מקצועית</h3>
+                            <h3 style="color: #00d9ff; margin-bottom: 15px;">💡 חוות דעת מקצועית</h3>
                             <div style="white-space: pre-wrap; line-height: 1.6; color: #333;">${result.review}</div>
                         </div>
 
                         ${result.stats.sample_files.length > 0 ? `
                             <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-top: 20px;">
-                                <h4 style="color: #667eea; margin-bottom: 10px;">📁 קבצים נסרקו (דוגמה)</h4>
+                                <h4 style="color: #00d9ff; margin-bottom: 10px;">📁 קבצים נסרקו (דוגמה)</h4>
                                 <div style="max-height: 200px; overflow-y: auto;">
                                     ${result.stats.sample_files.map(file => `<div style="padding: 5px; font-family: monospace; font-size: 12px;">📄 ${file}</div>`).join('')}
                                 </div>
                             </div>
                         ` : ''}
+
+                        <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-top: 20px; border: 2px solid #ffc107;">
+                            <h3 style="color: #856404; margin-bottom: 15px;">💬 המשך שיחה על הפרויקט</h3>
+                            <p style="color: #856404; margin-bottom: 15px;">
+                                אתה יכול להמשיך לשוחח עם Zero על הפרויקט, לבקש הסברים על ההמלצות, עזרה ביישום, או להתייעץ על שיפורים נוספים.
+                            </p>
+                            <div id="projectChatArea" style="margin-top: 20px;">
+                                <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button onclick="document.getElementById('projectChatInput').value='בצע המלצה מספר 1'; sendProjectChatMessage();" 
+                                            style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                                        ✅ בצע המלצה #1
+                                    </button>
+                                    <button onclick="document.getElementById('projectChatInput').value='איך אני יכול לשפר את הפרויקט?'; sendProjectChatMessage();" 
+                                            style="padding: 8px 15px; background: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                                        💡 איך לשפר?
+                                    </button>
+                                    <button onclick="document.getElementById('projectChatInput').value='תסביר לי את ההמלצות'; sendProjectChatMessage();" 
+                                            style="padding: 8px 15px; background: #ffc107; color: #333; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                                        📖 הסבר המלצות
+                                    </button>
+                                </div>
+                                <div id="projectChatMessages" style="max-height: 300px; overflow-y: auto; background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #ddd;">
+                                    <div class="message zero" style="margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+                                        <div class="message-header" style="font-size: 11px; opacity: 0.7; margin-bottom: 5px;">🤖 Zero Agent</div>
+                                        אני מוכן לעזור לך עם הפרויקט! אתה יכול לשאול שאלות על ההמלצות, לבקש עזרה ביישום, או להתייעץ על שיפורים נוספים.
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="projectChatInput" placeholder="שאל שאלה או בקש עזרה..." 
+                                           style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;"
+                                           onkeypress="if(event.key === 'Enter') sendProjectChatMessage()">
+                                    <button onclick="sendProjectChatMessage()" 
+                                            style="padding: 12px 25px; background: #00d9ff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                        שלח
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     `;
 
                     resultsDiv.innerHTML = html;
+                    window.currentProjectPath = projectPath;
                 } else {
                     resultsDiv.innerHTML = `
                         <div style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 10px;">
@@ -1169,6 +1578,90 @@ python api_server.py
                         <strong>❌ שגיאה:</strong> ${error.message}
                     </div>
                 `;
+            }
+        }
+
+        // Project Chat Functions
+        function addProjectChatMessage(sender, text) {
+            const messagesDiv = document.getElementById('projectChatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.style.cssText = 'margin: 10px 0; padding: 10px; border-radius: 8px; max-width: 80%;';
+            
+            if (sender === 'zero') {
+                messageDiv.style.background = '#f9f9f9';
+                messageDiv.innerHTML = `
+                    <div class="message-header" style="font-size: 11px; opacity: 0.7; margin-bottom: 5px;">🤖 Zero Agent</div>
+                    ${text}
+                `;
+            } else {
+                messageDiv.style.background = '#00d9ff';
+                messageDiv.style.color = 'white';
+                messageDiv.style.marginLeft = 'auto';
+                messageDiv.style.textAlign = 'right';
+                messageDiv.innerHTML = `
+                    <div class="message-header" style="font-size: 11px; opacity: 0.9; margin-bottom: 5px;">👤 אתה</div>
+                    ${text}
+                `;
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function sendProjectChatMessage() {
+            const input = document.getElementById('projectChatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addProjectChatMessage('user', message);
+            input.value = '';
+            
+            // Add loading message
+            const loadingId = 'loading-' + Date.now();
+            addProjectChatMessage('zero', 'מחפש תשובה...');
+            
+            try {
+                // Create context about the project for better responses
+                const projectContext = window.currentProjectPath 
+                    ? `\n\nהקשר: אני עובד על הפרויקט '${window.currentProjectPath}'. `
+                    : '';
+                
+                const response = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message + projectContext + ' אנא ענה בהתאם לסקירת הפרויקט שעשתי.',
+                        use_memory: true
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Remove loading message
+                const messagesDiv = document.getElementById('projectChatMessages');
+                const lastMessage = messagesDiv.lastElementChild;
+                if (lastMessage && lastMessage.textContent.includes('מחפש תשובה')) {
+                    lastMessage.remove();
+                }
+                
+                // Add Zero's response
+                const responseText = data.response || data.error || 'לא קיבלתי תשובה';
+                addProjectChatMessage('zero', responseText);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // Remove loading message
+                const messagesDiv = document.getElementById('projectChatMessages');
+                const lastMessage = messagesDiv.lastElementChild;
+                if (lastMessage && lastMessage.textContent.includes('מחפש תשובה')) {
+                    lastMessage.remove();
+                }
+                
+                addProjectChatMessage('zero', '❌ לא הצלחתי להתחבר לשרת. ודא שהשרת רץ ב-' + API_URL);
             }
         }
 

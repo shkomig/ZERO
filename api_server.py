@@ -17,6 +17,8 @@ Install:
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import asyncio
@@ -50,12 +52,34 @@ try:
 except:
     DATABASE_AVAILABLE = False
 
+try:
+    from tool_websearch import WebSearchTool
+    WEBSEARCH_AVAILABLE = True
+except:
+    WEBSEARCH_AVAILABLE = False
+
 # Import memory
 try:
     from memory.memory_manager import MemoryManager
+    from memory.short_term_memory import ShortTermMemory
     MEMORY_AVAILABLE = True
 except:
     MEMORY_AVAILABLE = False
+
+# Import code executor
+try:
+    from tool_codeexecutor import CodeExecutorTool
+    CODE_EXECUTOR_AVAILABLE = True
+except:
+    CODE_EXECUTOR_AVAILABLE = False
+
+# Import faster-whisper for voice transcription
+try:
+    from faster_whisper import WhisperModel
+    WHISPER_AVAILABLE = True
+except:
+    WHISPER_AVAILABLE = False
+    print("[API] WARNING: faster-whisper not available - voice features disabled")
 
 
 # ============================================================================
@@ -105,6 +129,29 @@ class ProjectReviewRequest(BaseModel):
     review_type: str = "full"  # full, quick, security, architecture
 
 
+class WebSearchRequest(BaseModel):
+    query: str
+    max_results: int = 5
+
+
+class ExecuteCodeRequest(BaseModel):
+    action: str  # python, bash, filesystem
+    command: str
+    args: Optional[Dict[str, Any]] = None
+
+
+class VoiceTranscribeRequest(BaseModel):
+    audio_url: Optional[str] = None  # URL to audio file
+    audio_base64: Optional[str] = None  # Base64 encoded audio
+    language: Optional[str] = "he"  # Hebrew default
+
+
+class VoiceTranscribeResponse(BaseModel):
+    text: str
+    language: str
+    duration: float
+
+
 class ToolResponse(BaseModel):
     success: bool
     result: Any
@@ -143,6 +190,7 @@ class ZeroAgent:
         self.router = None
         self.executor = None
         self.memory = None
+        self.code_executor = None
         self.initialized = False
     
     def initialize(self):
@@ -152,19 +200,19 @@ class ZeroAgent:
         
         print("\n[API] Initializing Zero Agent...")
         
-        # Initialize LLM
-        self.llm = StreamingMultiModelLLM(default_model="fast")
+        # Initialize LLM - use smart model for better instruction following
+        self.llm = StreamingMultiModelLLM(default_model="smart")
         if not self.llm.test_connection(verbose=False):
             raise ConnectionError("Cannot connect to Ollama!")
-        print("[API] ✓ LLM connected")
+        print("[API] OK LLM connected")
         
         # Initialize Router
         self.router = ContextAwareRouter(self.llm)
-        print("[API] ✓ Router ready")
+        print("[API] OK Router ready")
         
         # Initialize Executor
         self.executor = MultiModelExecutor(self.llm, self.router)
-        print("[API] ✓ Executor ready")
+        print("[API] OK Executor ready")
         
         # Initialize Memory
         if MEMORY_AVAILABLE:
@@ -174,17 +222,48 @@ class ZeroAgent:
                     rag_url="http://localhost:8000",
                     enable_rag=True
                 )
-                print("[API] ✓ Memory ready")
+                print("[API] OK Memory ready")
             except Exception as e:
-                print(f"[API] ⚠️  Memory unavailable: {e}")
+                print(f"[API] WARNING Memory unavailable: {e}")
                 self.memory = None
         
+        # Initialize Code Executor
+        if CODE_EXECUTOR_AVAILABLE:
+            try:
+                self.code_executor = CodeExecutorTool(workspace=Path("workspace"))
+                print("[API] OK Code executor ready")
+            except Exception as e:
+                print(f"[API] WARNING Code executor unavailable: {e}")
+                self.code_executor = None
+        
         self.initialized = True
-        print("[API] ✅ Zero Agent ready!\n")
+        print("[API] SUCCESS Zero Agent ready!\n")
 
 
 # Global agent instance
 zero = ZeroAgent()
+
+# Mount static files
+try:
+    app.mount("/static", StaticFiles(directory="."), name="static")
+except Exception as e:
+    print(f"[API] WARNING: Could not mount static files: {e}")
+
+# Mount zero logo directory
+try:
+    app.mount("/zero%20logo", StaticFiles(directory="zero logo"), name="zero-logo")
+except Exception as e:
+    print(f"[API] WARNING: Could not mount zero logo: {e}")
+
+# Serve HTML file
+@app.get("/zero_web_interface.html")
+async def serve_html():
+    """Serve the web interface HTML file"""
+    html_path = Path("zero_web_interface.html")
+    if html_path.exists():
+        return FileResponse(html_path)
+    else:
+        raise HTTPException(status_code=404, detail="HTML file not found")
 
 
 # ============================================================================
@@ -197,7 +276,7 @@ async def startup_event():
     try:
         zero.initialize()
     except Exception as e:
-        print(f"[API] ❌ Initialization failed: {e}")
+        print(f"[API] ERROR Initialization failed: {e}")
         raise
 
 
@@ -267,16 +346,116 @@ async def chat(request: ChatRequest):
         import time
         start_time = time.time()
         
+        # Check if user wants to search the web
+        search_triggered = False
+        search_results = ""
+        action_result = None
+        
+        if any(keyword in request.message.lower() for keyword in ['חפש ברשת', 'חפש', 'חיפוש', 'search', 'google', 'search for']):
+            if WEBSEARCH_AVAILABLE:
+                search_triggered = True
+                # Extract search query (everything after "search for" or similar)
+                search_query = request.message
+                for trigger in ['חפש ברשת', 'חפש', 'חיפוש על', 'search for', 'google']:
+                    if trigger in request.message.lower():
+                        search_query = request.message.lower().split(trigger, 1)[1].strip()
+                        break
+                
+                from tool_websearch import WebSearchTool
+                search_tool = WebSearchTool()
+                search_result = search_tool.search_simple(search_query)
+                search_results = f"\n\nחיפוש עדכני ברשת:\n{search_result}\n"
+        
+        # Check for action requests
+        if any(keyword in request.message.lower() for keyword in ['צור תיקייה', 'create folder', 'עשה תיקייה', 'צר תיקיה', 'תיצור תיקייה']):
+            if zero.code_executor:
+                try:
+                    from pathlib import Path
+                    # Extract folder name
+                    words = request.message.split()
+                    for i, word in enumerate(words):
+                        if 'תיקייה' in word or 'folder' in word.lower():
+                            folder_name = ' '.join(words[i+1:]) if i+1 < len(words) else 'new_folder'
+                            break
+                    else:
+                        folder_name = 'new_folder'
+                    
+                    workspace = Path("workspace")
+                    new_dir = workspace / folder_name
+                    new_dir.mkdir(parents=True, exist_ok=True)
+                    action_result = f"✅ Created directory: {new_dir}"
+                except Exception as e:
+                    action_result = f"❌ Error: {str(e)}"
+        
         # Build context from memory
         context = ""
+        preferences = ""
         if request.use_memory and zero.memory:
             context = zero.memory.build_context(
                 current_task=request.message,
                 max_length=2000
             )
+            
+            # Load user preferences and add to system message
+            try:
+                prefs = zero.memory.short_term.get_all_preferences()
+                if prefs:
+                    # Build a detailed instruction based on preferences
+                    role = prefs.get('role_relationship', 'assistant')
+                    style = prefs.get('conversation_style', 'professional')
+                    length = prefs.get('response_length', 'moderate')
+                    
+                    length_instruction = "Keep responses concise and to the point (2-3 sentences max)" if length == "concise" else "Provide detailed responses when needed"
+                    
+                    # Based on llm-instructions-shay.md best practices
+                    preferences = f"""אתה Zero - עוזר AI בעברית. תפקידך: עוזר קידוד והתפתחות טכנולוגית.
+
+עקרונות עבודה:
+- עונה בעברית, בבירור וברגישות
+- ממוקד - תשובות קצרות (1-3 משפטים) אלא אם מתבקש אחרת
+- מעשי - מתמקד בפתרונות ולעשייה
+- לא חוזר על ברכות - ממשיך את השיחה באופן טבעי
+
+דוגמאות לתשובות טובות:
+User: "מה זה machine learning?"
+Assistant: "AI שמאפשר למחשבים ללמוד מנתונים. כולל supervised learning (עם תגיות), unsupervised (ללא תגיות) ו-reinforcement (למידה מתוך ניסיון)."
+
+User: "צור תיקייה test"
+Assistant: "✅ נוצרה התיקייה test"
+
+User: "היי"
+Assistant: "היי, מה עובר עליך?"
+
+כללים:
+1. שאלה פשוטה → תשובה קצרה (1-2 משפטים)
+2. ללא התחלות כמו "בואו נצלול" או "הנה איך"
+3. ללא נקודות אלא אם מתבקש מפורשות
+4. המשכיות בשיחה - הבנה של הקשר קודם"""
+            except:
+                pass
         
-        # Prepare prompt
-        prompt = f"{context}\n{request.message}" if context else request.message
+        # Prepare prompt with system instruction and user message
+        # Format: System instruction + Context + User message
+        prompt = ""
+        
+        # 1. System instruction (from preferences) - Should be strong and clear
+        if preferences:
+            prompt += f"SYSTEM INSTRUCTION:\n{preferences}\n\n"
+        
+        # 2. Context (conversation history, preferences, facts)
+        if context:
+            prompt += f"CONTEXT:\n{context}\n\n"
+        
+        # 3. User message
+        prompt += f"USER: {request.message}\n\nASSISTANT:"
+        
+        # Add search results if available
+        if search_triggered and search_results:
+            prompt += search_results
+        
+        # Add action result if available
+        if action_result:
+            prompt += f"\n\nAction completed: {action_result}\n"
         
         # Get routing decision
         if request.model:
@@ -545,6 +724,7 @@ async def project_review(request: ProjectReviewRequest):
         
         return {
             "success": True,
+            "project_path": str(project_path),
             "result": {
                 "project_path": str(project_path),
                 "stats": {
@@ -566,14 +746,159 @@ async def project_review(request: ProjectReviewRequest):
 
 
 # ============================================================================
+# Execute Actions Endpoint
+# ============================================================================
+
+@app.post("/api/tools/execute", response_model=ToolResponse)
+async def execute_action(request: ExecuteCodeRequest):
+    """
+    Execute actions like creating directories, running commands, etc.
+    
+    Actions:
+    - filesystem: Create dir, list files, etc.
+    - python: Execute Python code
+    - bash: Run shell commands
+    """
+    if not CODE_EXECUTOR_AVAILABLE or zero.code_executor is None:
+        raise HTTPException(status_code=501, detail="Code executor not available")
+    
+    try:
+        action = request.action.lower()
+        command = request.command
+        args = request.args or {}
+        
+        if action == "filesystem":
+            # Handle filesystem operations
+            if command.startswith("mkdir "):
+                from pathlib import Path
+                dir_name = command.replace("mkdir ", "").strip()
+                workspace = Path("workspace")
+                new_dir = workspace / dir_name
+                new_dir.mkdir(parents=True, exist_ok=True)
+                return ToolResponse(
+                    success=True,
+                    result=f"Created directory: {new_dir}"
+                )
+            
+            elif command.startswith("ls") or command.startswith("list"):
+                from pathlib import Path
+                workspace = Path("workspace")
+                files = list(workspace.iterdir())
+                return ToolResponse(
+                    success=True,
+                    result={"files": [str(f.name) for f in files]}
+                )
+            
+            else:
+                return ToolResponse(
+                    success=False,
+                    error=f"Unknown filesystem command: {command}"
+                )
+        
+        elif action == "python":
+            result = zero.code_executor.execute_python_simple(command)
+            return ToolResponse(success=True, result=result)
+        
+        elif action == "bash":
+            result = zero.code_executor.execute_bash(command, safe_mode=True)
+            return ToolResponse(success=result["success"], result=result)
+        
+        else:
+            return ToolResponse(
+                success=False,
+                error=f"Unknown action: {action}"
+            )
+        
+    except Exception as e:
+        return ToolResponse(
+            success=False,
+            error=str(e)
+        )
+
+
+# ============================================================================
+# Voice Transcription Endpoint
+# ============================================================================
+
+@app.post("/api/voice/transcribe", response_model=VoiceTranscribeResponse)
+async def transcribe_voice(request: VoiceTranscribeRequest):
+    """
+    Transcribe audio to text using faster-whisper
+    
+    Supports:
+    - Hebrew (default)
+    - English and many other languages
+    """
+    if not WHISPER_AVAILABLE:
+        raise HTTPException(status_code=501, detail="Whisper not available - install faster-whisper")
+    
+    try:
+        import time
+        import base64
+        from pathlib import Path
+        from faster_whisper import WhisperModel
+        
+        # Load Whisper model (small, fast, good quality)
+        model = WhisperModel("small", device="cpu", compute_type="int8")
+        
+        # Handle audio input
+        if request.audio_base64:
+            # Decode base64 audio
+            audio_data = base64.b64decode(request.audio_base64)
+            # Save to temp file
+            temp_file = Path("workspace/temp_audio.wav")
+            temp_file.write_bytes(audio_data)
+            audio_path = str(temp_file)
+        elif request.audio_url:
+            # Download from URL
+            import requests
+            response = requests.get(request.audio_url)
+            temp_file = Path("workspace/temp_audio_from_url.wav")
+            temp_file.write_bytes(response.content)
+            audio_path = str(temp_file)
+        else:
+            raise HTTPException(status_code=400, detail="No audio provided")
+        
+        # Transcribe
+        start_time = time.time()
+        segments, info = model.transcribe(
+            audio_path,
+            language=request.language,
+            beam_size=5,
+            vad_filter=True,  # Voice Activity Detection
+        )
+        
+        # Combine all segments
+        text = " ".join([segment.text for segment in segments])
+        duration = time.time() - start_time
+        
+        # Cleanup
+        if temp_file.exists():
+            temp_file.unlink()
+        
+        return VoiceTranscribeResponse(
+            text=text,
+            language=info.language,
+            duration=duration
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+
+# ============================================================================
 # Run Server
 # ============================================================================
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+    
+    # Fix encoding for Windows
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
     
     print("="*70)
-    print("🚀 Zero Agent API Server")
+    print("Zero Agent API Server")
     print("="*70)
     print("\nStarting server...")
     print("API Docs: http://localhost:8080/docs")
