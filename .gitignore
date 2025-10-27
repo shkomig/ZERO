@@ -83,6 +83,11 @@ site/
 .ipynb_checkpoints/
 *.ipynb
 
+# Test Results and Comparisons
+test_results_*.json
+test_results_*.txt
+model_comparison_*.json
+
 # Secrets and Keys
 *.pem
 *.key

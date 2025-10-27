@@ -356,6 +356,15 @@ async def serve_html():
     else:
         raise HTTPException(status_code=404, detail="HTML file not found")
 
+@app.get("/zero_chat_simple.html")
+async def serve_simple_chat():
+    """Serve the simple chat interface HTML file"""
+    html_path = Path("zero_chat_simple.html")
+    if html_path.exists():
+        return FileResponse(html_path)
+    else:
+        raise HTTPException(status_code=404, detail="HTML file not found")
+
 # Serve logo
 @app.get("/logo.png")
 async def serve_main_logo():
@@ -414,7 +423,8 @@ async def root():
             "gmail": GMAIL_AVAILABLE,
             "calendar": CALENDAR_AVAILABLE,
             "database": DATABASE_AVAILABLE,
-            "agent_system": AGENT_ORCHESTRATOR_AVAILABLE and zero.agent_orchestrator is not None
+            "agent_system": AGENT_ORCHESTRATOR_AVAILABLE and zero.agent_orchestrator is not None,
+            "computer_control": COMPUTER_CONTROL_AVAILABLE
         },
         "endpoints": {
             "chat": "/api/chat",
@@ -423,6 +433,13 @@ async def root():
             "database": "/api/tools/database",
             "memory": "/api/memory/stats",
             "project_review": "/api/tools/project-review",
+            "computer_control": {
+                "command": "/api/computer-control/command",
+                "suggestions": "/api/computer-control/suggestions",
+                "analyze_screen": "/api/computer-control/analyze-screen",
+                "find_element": "/api/computer-control/find-element",
+                "learning_stats": "/api/computer-control/learning-stats"
+            },
             "websocket": "/ws/chat"
         }
     }
@@ -481,6 +498,13 @@ async def chat(request: ChatRequest, http_request: Request):
             "use_memory": true
         }
     """
+    # Fix encoding for Hebrew/Unicode
+    import sys
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    
     if not zero.initialized:
         raise HTTPException(status_code=503, detail="Agent not initialized")
     
@@ -513,7 +537,10 @@ async def chat(request: ChatRequest, http_request: Request):
         ]
         
         if any(keyword in request.message.lower() for keyword in search_keywords):
-            print(f"[API] Search keyword detected in: {request.message}")
+            try:
+                print(f"[API] Search keyword detected in: {request.message}")
+            except:
+                print(f"[API] Search keyword detected in message")
             if WEBSEARCH_AVAILABLE:
                 search_triggered = True
                 print(f"[API] Triggering Enhanced WebSearch...")
@@ -571,7 +598,11 @@ async def chat(request: ChatRequest, http_request: Request):
             'הרץ פקודה', 'run command'
         ]
         
-        print(f"[API] Checking message: {request.message}")
+        # Safely print message (avoid encoding errors)
+        try:
+            print(f"[API] Checking message: {request.message}")
+        except:
+            print(f"[API] Checking message: [Hebrew text - {len(request.message)} chars]")
         print(f"[API] Agent Orchestrator available: {zero.agent_orchestrator is not None}")
         
         # Check if we should use Agent Orchestrator for complex tasks
@@ -692,31 +723,44 @@ async def chat(request: ChatRequest, http_request: Request):
             )
             print(f"[Context] Using old memory system: {len(context)} chars")
         
+        # Always use enhanced system prompts for HIGH-QUALITY responses
         preferences = ""
-        if request.use_memory and zero.memory:
+        try:
+            from enhanced_system_prompt import get_system_prompt
             
-            # Load user preferences and add to system message
-            try:
-                from enhanced_system_prompt import get_system_prompt
-                prefs = zero.memory.short_term.get_all_preferences()
-                if prefs:
-                    # Check if user wants detailed or concise
+            # Check if user has specific preference
+            if request.use_memory and zero.memory:
+                try:
+                    prefs = zero.memory.short_term.get_all_preferences()
                     response_mode = prefs.get('response_mode', 'detailed')
                     preferences = get_system_prompt(detailed=(response_mode == 'detailed'))
-                else:
-                    # Default to detailed responses for better information
+                except:
+                    # Default to DETAILED mode for high-quality responses
                     preferences = get_system_prompt(detailed=True)
-            except:
-                # Fallback to concise mode
-                preferences = """# אתה Zero - עוזר AI תמציתי בעברית
+            else:
+                # Default to DETAILED mode for high-quality responses
+                preferences = get_system_prompt(detailed=True)
+        except Exception as e:
+            print(f"[API] Warning: Could not load enhanced_system_prompt: {e}")
+            # Fallback to simple, clean prompt
+            preferences = """You are Zero Agent, an AI assistant. Answer in Hebrew clearly and concisely.
 
-## כללים קריטיים - תמציתיות
-- ענה במשפט אחד בלבד (מקסימום 2 משפטים)
-- מקסימום 40 מילים - חסום את עצמך
-- ללא הקדמות, ללא סיכומים
-- ישיר לעניין - no fluff
+Rules:
+1. Short, direct answers for simple questions
+2. Detailed answers for complex questions  
+3. No unnecessary introductions
+4. No emojis or symbols
+5. Clean formatting
 
-כל תשובה: משפט אחד בלבד, ישיר, תמציתי."""
+Examples:
+Q: 5+5
+A: 10
+
+Q: כמה זה 6+5
+A: 11
+
+Q: מה זה Python?
+A: Python היא שפת תכנות רב-תכליתית, קלה ללמידה ושימושית לפיתוח אפליקציות, ניתוח נתונים ואוטומציה."""
         
         # Build prompt with modular architecture (from llm-concise-guide.md)
         # Structure: Role + Constraints + Format + Task (for better instruction following)
@@ -1211,6 +1255,227 @@ async def transcribe_voice(request: VoiceTranscribeRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
+
+# ============================================================================
+# Computer Control Agent Endpoints
+# ============================================================================
+
+# Import Computer Control Agent
+try:
+    from zero_agent.tools.computer_control_agent import ComputerControlAgent
+    COMPUTER_CONTROL_AVAILABLE = True
+except:
+    COMPUTER_CONTROL_AVAILABLE = False
+    print("[API] WARNING: Computer Control Agent not available")
+
+# Initialize Computer Control Agent
+computer_control_agent = None
+
+def initialize_computer_control():
+    """Initialize Computer Control Agent"""
+    global computer_control_agent
+    if COMPUTER_CONTROL_AVAILABLE and not computer_control_agent:
+        try:
+            computer_control_agent = ComputerControlAgent(
+                llm=zero.llm,
+                orchestrator=zero.agent_orchestrator
+            )
+            print("[API] OK Computer Control Agent ready")
+        except Exception as e:
+            print(f"[API] WARNING Computer Control Agent failed: {e}")
+            computer_control_agent = None
+
+# Pydantic models for Computer Control
+class ComputerControlRequest(BaseModel):
+    command: str
+    context: Optional[Dict[str, Any]] = None
+
+class ComputerControlResponse(BaseModel):
+    success: bool
+    action: str
+    target: str
+    result: str
+    error: Optional[str] = None
+    confidence: float
+    reasoning: str
+
+class ProactiveSuggestionRequest(BaseModel):
+    context: Optional[Dict[str, Any]] = None
+
+class ProactiveSuggestionResponse(BaseModel):
+    suggestions: List[Dict[str, Any]]
+    count: int
+
+class ScreenAnalysisRequest(BaseModel):
+    screenshot_path: Optional[str] = None
+
+class ScreenAnalysisResponse(BaseModel):
+    success: bool
+    analysis: Dict[str, Any]
+    error: Optional[str] = None
+
+class ElementFindRequest(BaseModel):
+    description: str
+    screenshot_path: Optional[str] = None
+
+class ElementFindResponse(BaseModel):
+    success: bool
+    element: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+
+class LearningStatsResponse(BaseModel):
+    success: bool
+    stats: Dict[str, Any]
+    error: Optional[str] = None
+
+@app.post("/api/computer-control/command", response_model=ComputerControlResponse)
+async def computer_control_command(request: ComputerControlRequest):
+    """
+    Execute computer control command
+    
+    Examples:
+        - "לחץ על הכפתור הכחול"
+        - "click on the red button"
+        - "הקלד 'שלום עולם'"
+        - "type 'hello world'"
+        - "צלם מסך"
+        - "take screenshot"
+    """
+    if not COMPUTER_CONTROL_AVAILABLE:
+        raise HTTPException(status_code=501, detail="Computer Control Agent not available")
+    
+    if not computer_control_agent:
+        initialize_computer_control()
+        if not computer_control_agent:
+            raise HTTPException(status_code=503, detail="Computer Control Agent not initialized")
+    
+    try:
+        result = computer_control_agent.process_command(
+            request.command, 
+            request.context
+        )
+        
+        return ComputerControlResponse(
+            success=result.get("success", False),
+            action=result.get("action", "unknown"),
+            target=result.get("target", ""),
+            result=result.get("result", ""),
+            error=result.get("error"),
+            confidence=result.get("confidence", 0.0),
+            reasoning=result.get("reasoning", "")
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/computer-control/suggestions", response_model=ProactiveSuggestionResponse)
+async def get_proactive_suggestions(request: ProactiveSuggestionRequest):
+    """
+    Get proactive action suggestions based on current context
+    """
+    if not COMPUTER_CONTROL_AVAILABLE:
+        raise HTTPException(status_code=501, detail="Computer Control Agent not available")
+    
+    if not computer_control_agent:
+        initialize_computer_control()
+        if not computer_control_agent:
+            raise HTTPException(status_code=503, detail="Computer Control Agent not initialized")
+    
+    try:
+        suggestions = computer_control_agent.get_proactive_suggestions(
+            request.context
+        )
+        
+        return ProactiveSuggestionResponse(
+            suggestions=suggestions,
+            count=len(suggestions)
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/computer-control/analyze-screen", response_model=ScreenAnalysisResponse)
+async def analyze_screen(request: ScreenAnalysisRequest):
+    """
+    Analyze current screen using computer vision
+    """
+    if not COMPUTER_CONTROL_AVAILABLE:
+        raise HTTPException(status_code=501, detail="Computer Control Agent not available")
+    
+    if not computer_control_agent:
+        initialize_computer_control()
+        if not computer_control_agent:
+            raise HTTPException(status_code=503, detail="Computer Control Agent not initialized")
+    
+    try:
+        analysis = computer_control_agent.analyze_screen(
+            request.screenshot_path
+        )
+        
+        return ScreenAnalysisResponse(
+            success=analysis.get("success", False),
+            analysis=analysis,
+            error=analysis.get("error")
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/computer-control/find-element", response_model=ElementFindResponse)
+async def find_element(request: ElementFindRequest):
+    """
+    Find UI element by description using computer vision
+    """
+    if not COMPUTER_CONTROL_AVAILABLE:
+        raise HTTPException(status_code=501, detail="Computer Control Agent not available")
+    
+    if not computer_control_agent:
+        initialize_computer_control()
+        if not computer_control_agent:
+            raise HTTPException(status_code=503, detail="Computer Control Agent not initialized")
+    
+    try:
+        result = computer_control_agent.find_element(
+            request.description,
+            request.screenshot_path
+        )
+        
+        return ElementFindResponse(
+            success=result.get("success", False),
+            element=result.get("element"),
+            error=result.get("error")
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/computer-control/learning-stats", response_model=LearningStatsResponse)
+async def get_learning_stats():
+    """
+    Get learning statistics from behavior learning system
+    """
+    if not COMPUTER_CONTROL_AVAILABLE:
+        raise HTTPException(status_code=501, detail="Computer Control Agent not available")
+    
+    if not computer_control_agent:
+        initialize_computer_control()
+        if not computer_control_agent:
+            raise HTTPException(status_code=503, detail="Computer Control Agent not initialized")
+    
+    try:
+        stats = computer_control_agent.get_learning_stats()
+        
+        return LearningStatsResponse(
+            success=True,
+            stats=stats
+        )
+        
+    except Exception as e:
+        return LearningStatsResponse(
+            success=False,
+            stats={},
+            error=str(e)
+        )
 
 # ============================================================================
 # Run Server

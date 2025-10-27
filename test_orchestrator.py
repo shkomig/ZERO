@@ -19,3 +19,6 @@ print("Testing: צור פרויקט Python חדש בשם myapp")
 result = ask_zero("צור פרויקט Python חדש בשם myapp")
 print(f"\nModel used: {result.get('model_used', 'N/A')}")
 print(f"Success: {result.get('response', 'N/A')[:500]}")
+
+
+

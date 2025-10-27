@@ -84,14 +84,18 @@ class StreamingMultiModelLLM:
         
         try:
             url = f"{self.base_url}/api/generate"
+            # OPTIMIZED SETTINGS based on Few-Shot research for DETAILED responses
             payload = {
                 "model": model_name,
                 "prompt": prompt,
                 "stream": True,  # Enable streaming!
                 "options": {
                     "num_predict": max_tokens,
-                    "num_ctx": 8192,  # Context window size
-                    "temperature": 0.7
+                    "num_ctx": 16384,  # Large context window for detailed responses
+                    "temperature": 0.78,  # Higher for richer, more detailed responses
+                    "top_p": 0.93,  # Nucleus sampling - allow more diversity
+                    "top_k": 50,  # Top-K sampling for quality control
+                    "repeat_penalty": 1.03  # Low penalty - don't stop the model from elaborating
                 }
             }
             
@@ -196,24 +200,24 @@ class StreamingMultiModelLLM:
         
         try:
             url = f"{self.base_url}/api/generate"
-            # Apply concise-guide best practices:
-            # Low temperature (0.3) for focused, shorter responses
-            # Limited tokens (200) as hard cap for conciseness
-            # Repetition penalty to reduce verbosity
+            # HIGH-QUALITY settings for detailed, accurate responses
+            # Based on best practices from research
             
             # For DeepSeek-R1, add stop sequences to prevent thinking tokens
-            stop_sequences = ["<think>", "</think>", "<think>", "</think>"]
+            stop_sequences = ["<think>", "</think>"]
             
             payload = {
                 "model": model_name,
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "num_predict": 200,  # Hard limit for conciseness
-                    "num_ctx": 8192,  # Context window size
-                    "temperature": 0.3,  # Lower = more focused, shorter responses
-                    "repeat_penalty": 1.1,  # Penalize repetition (reduces verbose)
-                    "stop": stop_sequences  # Stop at thinking tags
+                    "num_predict": 3072,  # Higher limit for detailed responses (was 2048)
+                    "num_ctx": 16384,  # Larger context window (was 8192)
+                    "temperature": 0.78,  # Slightly higher for richer responses (was 0.75)
+                    "top_p": 0.93,  # More diverse sampling (was 0.92)
+                    "top_k": 50,  # Top-K sampling for quality control
+                    "repeat_penalty": 1.03,  # Lower penalty - let model elaborate (was 1.05)
+                    "stop": ["\n\n\n\n", "**999.**"]  # Stop at extreme boundaries only
                 }
             }
             
@@ -250,14 +254,18 @@ class StreamingMultiModelLLM:
         
         try:
             url = f"{self.base_url}/api/chat"
+            # OPTIMIZED for DETAILED responses
             payload = {
                 "model": model_name,
                 "messages": messages,
                 "stream": False,
                 "options": {
                     "num_predict": max_tokens,
-                    "num_ctx": 8192,  # Context window size
-                    "temperature": 0.7
+                    "num_ctx": 16384,  # Large context window
+                    "temperature": 0.78,  # Higher for detailed responses
+                    "top_p": 0.93,  # More diverse sampling
+                    "top_k": 50,  # Quality control
+                    "repeat_penalty": 1.03  # Low - allow elaboration
                 }
             }
             
