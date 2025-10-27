@@ -52,9 +52,10 @@ class HebrewTTSTool:
             logger.info(f"🗣️ Generating speech: {text[:50]}...")
             
             if not self.check_health():
+                logger.error("❌ Hebrew TTS service is not responding")
                 return {
                     "success": False,
-                    "error": "Hebrew TTS service is not running"
+                    "error": "Hebrew TTS service is not running. Start it with: cd C:\\AI-MEDIA-RTX5090\\services && .\\start-stack.ps1"
                 }
             
             # URL encode the text for GET request

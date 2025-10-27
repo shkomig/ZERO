@@ -57,9 +57,10 @@ class ImageGenerationTool:
             logger.info(f"🎨 Generating image: {prompt[:50]}...")
             
             if not self.check_health():
+                logger.error("❌ FLUX service is not responding")
                 return {
                     "success": False,
-                    "error": "FLUX service is not running. Start it with: C:\\AI-MEDIA-RTX5090\\services\\start-stack.ps1"
+                    "error": "FLUX service is not running. Start it with: cd C:\\AI-MEDIA-RTX5090\\services && .\\start-stack.ps1"
                 }
             
             # Generate seed if not provided

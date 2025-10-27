@@ -60,9 +60,10 @@ class VideoGenerationTool:
             logger.info(f"🎥 Generating video (CogVideoX): {prompt[:50]}...")
             
             if not self.check_health("cogvideo"):
+                logger.error("❌ CogVideoX service is not responding")
                 return {
                     "success": False,
-                    "error": "CogVideoX service is not running"
+                    "error": "CogVideoX service is not running. Start it with: cd C:\\AI-MEDIA-RTX5090\\services && .\\start-stack.ps1"
                 }
             
             payload = {
@@ -145,9 +146,10 @@ class VideoGenerationTool:
             logger.info(f"🎬 Generating video (HunyuanVideo): {prompt[:50]}...")
             
             if not self.check_health("hunyuan"):
+                logger.error("❌ HunyuanVideo service is not responding")
                 return {
                     "success": False,
-                    "error": "HunyuanVideo service is not running"
+                    "error": "HunyuanVideo service is not running. Start it with: cd C:\\AI-MEDIA-RTX5090\\services && .\\start-stack.ps1"
                 }
             
             payload = {
