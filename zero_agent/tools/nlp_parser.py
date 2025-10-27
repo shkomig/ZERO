@@ -92,6 +92,30 @@ class NLPCommandParser:
                 r"הקש (.+\+.+)",
                 r"תקיש (.+\+.+)",
                 r"שלב מקשים (.+)"
+            ],
+            "generate_image": [
+                r"צור תמונה של (.+)",
+                r"צור תמונה (.+)",
+                r"תצור תמונה של (.+)",
+                r"צייר (.+)",
+                r"תצייר (.+)",
+                r"הפק תמונה של (.+)"
+            ],
+            "generate_video": [
+                r"צור סרטון של (.+)",
+                r"צור סרטון (.+)",
+                r"תצור סרטון של (.+)",
+                r"הפק סרטון של (.+)",
+                r"צור וידאו של (.+)",
+                r"צור וידאו (.+)"
+            ],
+            "speak": [
+                r"הקרא בקול (.+)",
+                r"תקרא בקול (.+)",
+                r"דבר (.+)",
+                r"תדבר (.+)",
+                r"הגה (.+)",
+                r"תהגה (.+)"
             ]
         }
         
@@ -142,6 +166,29 @@ class NLPCommandParser:
                 r"hit (.+\+.+)",
                 r"keyboard (.+)",
                 r"shortcut (.+)"
+            ],
+            "generate_image": [
+                r"generate image of (.+)",
+                r"generate image (.+)",
+                r"create image of (.+)",
+                r"create image (.+)",
+                r"draw (.+)",
+                r"make image of (.+)"
+            ],
+            "generate_video": [
+                r"generate video of (.+)",
+                r"generate video (.+)",
+                r"create video of (.+)",
+                r"create video (.+)",
+                r"make video of (.+)",
+                r"render video (.+)"
+            ],
+            "speak": [
+                r"speak (.+)",
+                r"say (.+)",
+                r"read out (.+)",
+                r"read aloud (.+)",
+                r"voice (.+)"
             ]
         }
         
@@ -240,6 +287,12 @@ class NLPCommandParser:
                             return self._parse_wait_action(command, groups, is_hebrew)
                         elif action_type == "hotkey":
                             return self._parse_hotkey_action(command, groups, is_hebrew)
+                        elif action_type == "generate_image":
+                            return self._parse_generate_image_action(command, groups, is_hebrew)
+                        elif action_type == "generate_video":
+                            return self._parse_generate_video_action(command, groups, is_hebrew)
+                        elif action_type == "speak":
+                            return self._parse_speak_action(command, groups, is_hebrew)
             
             return None
             
@@ -420,6 +473,45 @@ class NLPCommandParser:
             parameters={"keys": keys},
             confidence=0.9,
             reasoning=f"Press keyboard shortcut: {keys}"
+        )
+    
+    def _parse_generate_image_action(self, command: str, groups: Tuple, is_hebrew: bool) -> Action:
+        """Parse image generation action"""
+        prompt = groups[0] if groups else command
+        prompt = prompt.strip()
+        
+        return Action(
+            type="generate_image",
+            target="image",
+            parameters={"prompt": prompt},
+            confidence=0.95,
+            reasoning=f"Generate image: {prompt[:50]}"
+        )
+    
+    def _parse_generate_video_action(self, command: str, groups: Tuple, is_hebrew: bool) -> Action:
+        """Parse video generation action"""
+        prompt = groups[0] if groups else command
+        prompt = prompt.strip()
+        
+        return Action(
+            type="generate_video",
+            target="video",
+            parameters={"prompt": prompt},
+            confidence=0.95,
+            reasoning=f"Generate video: {prompt[:50]}"
+        )
+    
+    def _parse_speak_action(self, command: str, groups: Tuple, is_hebrew: bool) -> Action:
+        """Parse text-to-speech action"""
+        text = groups[0] if groups else command
+        text = text.strip()
+        
+        return Action(
+            type="speak",
+            target="audio",
+            parameters={"text": text},
+            confidence=0.95,
+            reasoning=f"Speak: {text[:50]}"
         )
     
     def _extract_coordinates(self, text: str) -> Optional[Tuple[int, int]]:

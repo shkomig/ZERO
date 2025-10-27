@@ -633,6 +633,15 @@ async def chat(request: ChatRequest, http_request: Request):
             # Screenshot commands
             'צלם מסך', 'תצלם מסך', 'צילום מסך',
             'screenshot', 'take screenshot', 'capture screen',
+            # Image generation commands
+            'צור תמונה', 'תצור תמונה', 'צייר', 'תצייר', 'הפק תמונה',
+            'generate image', 'create image', 'draw', 'make image',
+            # Video generation commands
+            'צור סרטון', 'תצור סרטון', 'הפק סרטון', 'צור וידאו',
+            'generate video', 'create video', 'make video', 'render video',
+            # TTS commands
+            'הקרא בקול', 'תקרא בקול', 'דבר', 'תדבר', 'הגה', 'תהגה',
+            'speak', 'say', 'read out', 'read aloud', 'voice',
             # Hotkey commands (check for + in message for keyboard shortcuts)
         ]
         

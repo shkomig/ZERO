@@ -473,6 +473,54 @@ class ComputerControlAgent:
                 except Exception as e:
                     return {"success": False, "error": f"Hotkey failed: {str(e)}"}
             
+            elif action.type == "generate_image":
+                # Generate image using FLUX
+                try:
+                    from .tool_image_generation import image_tool
+                    prompt = action.parameters.get("prompt", "")
+                    if prompt:
+                        result = image_tool.generate_simple(prompt)
+                        if result.get("success"):
+                            return {"success": True, "result": f"Image generation started: {result.get('message', '')}", "data": result}
+                        else:
+                            return {"success": False, "error": result.get("error", "Unknown error")}
+                    else:
+                        return {"success": False, "error": "No prompt provided"}
+                except Exception as e:
+                    return {"success": False, "error": f"Image generation failed: {str(e)}"}
+            
+            elif action.type == "generate_video":
+                # Generate video using CogVideoX or HunyuanVideo
+                try:
+                    from .tool_video_generation import video_tool
+                    prompt = action.parameters.get("prompt", "")
+                    if prompt:
+                        result = video_tool.generate_simple(prompt, service="cogvideo")
+                        if result.get("success"):
+                            return {"success": True, "result": f"Video generation started: {result.get('message', '')}", "data": result}
+                        else:
+                            return {"success": False, "error": result.get("error", "Unknown error")}
+                    else:
+                        return {"success": False, "error": "No prompt provided"}
+                except Exception as e:
+                    return {"success": False, "error": f"Video generation failed: {str(e)}"}
+            
+            elif action.type == "speak":
+                # Text-to-Speech using Hebrew TTS
+                try:
+                    from .tool_tts_hebrew import tts_tool
+                    text = action.parameters.get("text", "")
+                    if text:
+                        result = tts_tool.speak_simple(text)
+                        if result.get("success"):
+                            return {"success": True, "result": f"Speech generated: {result.get('filename', '')}", "data": result}
+                        else:
+                            return {"success": False, "error": result.get("error", "Unknown error")}
+                    else:
+                        return {"success": False, "error": "No text provided"}
+                except Exception as e:
+                    return {"success": False, "error": f"TTS failed: {str(e)}"}
+            
             else:
                 return {"success": False, "error": f"Unknown action: {action.type}"}
                 
