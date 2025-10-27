@@ -122,6 +122,38 @@
             border-color: #10a37f;
         }
 
+        .mic-btn {
+            position: absolute;
+            right: 60px;
+            bottom: 12px;
+            background: #f7f7f8;
+            color: #666;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .mic-btn:hover {
+            background: #e7e7e8;
+        }
+
+        .mic-btn.recording {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
         .send-btn {
             position: absolute;
             left: 12px;
@@ -213,6 +245,14 @@
 
         <div class="input-area">
             <div class="input-wrapper">
+                <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="הקלטה קולית">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
                 <textarea 
                     class="chat-input" 
                     id="chatInput" 
@@ -321,6 +361,75 @@
         textarea.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+
+        // Voice Input Support
+        let recognition = null;
+        let isRecording = false;
+
+        function initVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'he-IL';  // Hebrew
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('chatInput').value = transcript;
+                    stopRecording();
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    stopRecording();
+                    if (event.error === 'not-allowed') {
+                        alert('אנא אפשר גישה למיקרופון בהגדרות הדפדפן');
+                    }
+                };
+
+                recognition.onend = () => {
+                    stopRecording();
+                };
+            } else {
+                console.warn('Speech recognition not supported');
+            }
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                initVoiceRecognition();
+            }
+
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        function startRecording() {
+            if (recognition) {
+                isRecording = true;
+                document.getElementById('micBtn').classList.add('recording');
+                document.getElementById('chatInput').placeholder = 'מקשיב...';
+                recognition.start();
+            }
+        }
+
+        function stopRecording() {
+            if (recognition && isRecording) {
+                isRecording = false;
+                document.getElementById('micBtn').classList.remove('recording');
+                document.getElementById('chatInput').placeholder = 'שאל אותי משהו...';
+                recognition.stop();
+            }
+        }
+
+        // Initialize voice recognition on load
+        window.addEventListener('load', () => {
+            initVoiceRecognition();
         });
     </script>
 </body>

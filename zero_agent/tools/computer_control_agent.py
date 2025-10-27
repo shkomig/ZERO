@@ -509,11 +509,28 @@ class ComputerControlAgent:
                 # Text-to-Speech using Hebrew TTS
                 try:
                     from .tool_tts_hebrew import tts_tool
+                    import subprocess
+                    import platform
+                    
                     text = action.parameters.get("text", "")
                     if text:
                         result = tts_tool.speak_simple(text)
                         if result.get("success"):
-                            return {"success": True, "result": f"Speech generated: {result.get('filename', '')}", "data": result}
+                            # Auto-play the audio file
+                            filepath = result.get("filepath")
+                            if filepath:
+                                try:
+                                    if platform.system() == "Windows":
+                                        subprocess.Popen(['powershell', 'Invoke-Item', filepath])
+                                    elif platform.system() == "Darwin":  # macOS
+                                        subprocess.Popen(['open', filepath])
+                                    else:  # Linux
+                                        subprocess.Popen(['xdg-open', filepath])
+                                    logger.info(f"🔊 Playing audio: {filepath}")
+                                except Exception as play_error:
+                                    logger.warning(f"Could not auto-play audio: {play_error}")
+                            
+                            return {"success": True, "result": f"🔊 מדבר: {text[:50]}...", "data": result}
                         else:
                             return {"success": False, "error": result.get("error", "Unknown error")}
                     else:
