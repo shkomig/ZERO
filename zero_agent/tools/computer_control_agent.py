@@ -277,29 +277,87 @@ class ComputerControlAgent:
             return "workspace/screenshots/default.png"
     
     def _execute_action(self, action: Action, context: Dict) -> Dict[str, Any]:
-        """Execute parsed action"""
+        """Execute parsed action - ALWAYS execute directly for computer control"""
         try:
-            if self.orchestrator:
-                # Execute via orchestrator
-                command = self._action_to_command(action)
-                result = self.orchestrator.execute_goal(command)
-                return {
-                    "success": result.success,
-                    "result": result.output,
-                    "error": result.error
-                }
-            else:
-                # Direct execution
-                return self._execute_directly(action, context)
+            # Direct execution - this actually performs the action
+            return self._execute_directly(action, context)
                 
         except Exception as e:
             logger.error(f"Action execution failed: {e}")
+            # Fallback to orchestrator only if direct execution fails
+            if self.orchestrator:
+                try:
+                    command = self._action_to_command(action)
+                    result = self.orchestrator.execute_goal(command)
+                    return {
+                        "success": result.success,
+                        "result": result.output,
+                        "error": result.error
+                    }
+                except Exception as orch_error:
+                    logger.error(f"Orchestrator fallback failed: {orch_error}")
             return {"success": False, "error": str(e)}
     
     def _execute_directly(self, action: Action, context: Dict) -> Dict[str, Any]:
         """Execute action directly"""
         try:
-            if action.type == "screenshot":
+            if action.type == "open":
+                # Open application
+                import subprocess
+                import platform
+                
+                app_name = action.target.lower() if action.target else ""
+                
+                # Map common names to executables (Windows)
+                app_map = {
+                    # Hebrew
+                    "דפדפן": "start msedge",
+                    "דפדפן גוגל": "start chrome",
+                    "פנקס רשימות": "notepad",
+                    "מחשבון": "calc",
+                    "סייר": "explorer",
+                    "לוח בקרה": "control",
+                    # English
+                    "notepad": "notepad",
+                    "calculator": "calc",
+                    "calc": "calc",
+                    "chrome": "start chrome",
+                    "google chrome": "start chrome",
+                    "edge": "start msedge",
+                    "microsoft edge": "start msedge",
+                    "explorer": "explorer",
+                    "file explorer": "explorer",
+                    "cmd": "cmd",
+                    "command prompt": "cmd",
+                    "powershell": "powershell",
+                    "control panel": "control",
+                    "settings": "start ms-settings:",
+                    "paint": "mspaint",
+                    "wordpad": "write"
+                }
+                
+                # Get executable name
+                exe = app_map.get(app_name, app_name)
+                
+                try:
+                    if platform.system() == "Windows":
+                        result = subprocess.run(exe, shell=True, capture_output=True, timeout=3)
+                        # Check if command was recognized
+                        if result.returncode == 0 or "is not recognized" not in str(result.stderr):
+                            return {"success": True, "result": f"Opened {action.target}"}
+                        else:
+                            return {"success": False, "error": f"Application '{action.target}' not found"}
+                    else:
+                        subprocess.Popen(exe)
+                        return {"success": True, "result": f"Opened {action.target}"}
+                except subprocess.TimeoutExpired:
+                    # Timeout means the app is probably running (good!)
+                    return {"success": True, "result": f"Opened {action.target}"}
+                except Exception as e:
+                    logger.error(f"Failed to open {action.target}: {e}")
+                    return {"success": False, "error": f"Could not open {action.target}: {str(e)}"}
+            
+            elif action.type == "screenshot":
                 return {"success": True, "result": "Screenshot taken"}
             
             elif action.type == "click":
@@ -325,7 +383,9 @@ class ComputerControlAgent:
     def _action_to_command(self, action: Action) -> str:
         """Convert action to natural language command"""
         try:
-            if action.type == "click":
+            if action.type == "open":
+                return f"Open {action.target}"
+            elif action.type == "click":
                 return f"Click on {action.target}"
             elif action.type == "type":
                 text = action.parameters.get("text", "")

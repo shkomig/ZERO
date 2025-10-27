@@ -36,6 +36,14 @@ class NLPCommandParser:
         
         # Command patterns for different languages
         self.hebrew_patterns = {
+            "open": [
+                r"פתח (.+)",
+                r"תפתח (.+)",
+                r"הפעל (.+)",
+                r"תפעיל (.+)",
+                r"הרץ (.+)",
+                r"תריץ (.+)"
+            ],
             "click": [
                 r"לחץ על (.+)",
                 r"לחץ (.+)",
@@ -81,6 +89,12 @@ class NLPCommandParser:
         }
         
         self.english_patterns = {
+            "open": [
+                r"open (.+)",
+                r"launch (.+)",
+                r"start (.+)",
+                r"run (.+)"
+            ],
             "click": [
                 r"click on (.+)",
                 r"click (.+)",
@@ -197,7 +211,9 @@ class NLPCommandParser:
                     if match:
                         groups = match.groups()
                         
-                        if action_type == "click":
+                        if action_type == "open":
+                            return self._parse_open_action(command, groups, is_hebrew)
+                        elif action_type == "click":
                             return self._parse_click_action(command, groups, is_hebrew)
                         elif action_type == "type":
                             return self._parse_type_action(command, groups, is_hebrew)
@@ -215,6 +231,19 @@ class NLPCommandParser:
         except Exception as e:
             logger.warning(f"Pattern matching failed: {e}")
             return None
+    
+    def _parse_open_action(self, command: str, groups: Tuple, is_hebrew: bool) -> Action:
+        """Parse open/launch application action"""
+        app_name = groups[0] if groups else "unknown"
+        app_name = app_name.strip()
+        
+        return Action(
+            type="open",
+            target=app_name,
+            parameters={"app": app_name},
+            confidence=0.95,
+            reasoning=f"Open application: {app_name}"
+        )
     
     def _parse_click_action(self, command: str, groups: Tuple, is_hebrew: bool) -> Action:
         """Parse click action"""

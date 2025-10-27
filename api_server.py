@@ -3,7 +3,12 @@ Zero Agent API Server
 =====================
 FastAPI server with REST endpoints and WebSocket streaming
 
-Endpoints:
+Web Interfaces:
+    GET  /                  - Main web interface
+    GET  /simple            - Simple chat interface
+    GET  /docs              - API documentation
+
+API Endpoints:
     POST /api/chat          - Chat with Zero
     POST /api/tools/email   - Email operations
     POST /api/tools/calendar - Calendar operations
@@ -395,6 +400,10 @@ async def startup_event():
     """Initialize Zero Agent on startup"""
     try:
         zero.initialize()
+        # Initialize Computer Control Agent
+        if COMPUTER_CONTROL_AVAILABLE:
+            initialize_computer_control()
+            print("[API] Computer Control Agent initialized")
     except Exception as e:
         print(f"[API] ERROR Initialization failed: {e}")
         raise
@@ -412,7 +421,11 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    """Health check and API info"""
+    """Serve the main web interface"""
+    html_path = Path("zero_web_interface.html")
+    if html_path.exists():
+        return FileResponse(html_path)
+    # Fallback to API info if HTML not found
     return {
         "status": "online",
         "agent": "Zero Agent",
@@ -427,6 +440,11 @@ async def root():
             "computer_control": COMPUTER_CONTROL_AVAILABLE
         },
         "endpoints": {
+            "ui": {
+                "main": "/",
+                "simple": "/simple",
+                "docs": "/docs"
+            },
             "chat": "/api/chat",
             "email": "/api/tools/email",
             "calendar": "/api/tools/calendar",
@@ -449,6 +467,15 @@ async def root():
 async def health_check():
     """Simple health check"""
     return {"status": "healthy", "initialized": zero.initialized}
+
+
+@app.get("/simple")
+async def serve_simple():
+    """Serve the simple chat interface"""
+    html_path = Path("zero_chat_simple.html")
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Simple interface not found")
 
 
 @app.post("/api/agent/direct")
@@ -517,9 +544,10 @@ async def chat(request: ChatRequest, http_request: Request):
             detail=f"Rate limit exceeded. Try again later. ({remaining} requests remaining)"
         )
     
+    import time
+    start_time = time.time()
+    
     try:
-        import time
-        start_time = time.time()
         
         # Check if user wants to search the web
         search_triggered = False
@@ -588,11 +616,43 @@ async def chat(request: ChatRequest, http_request: Request):
                     search_results = ""
                     print(f"[WebSearch] Graceful degradation - continuing without search")
         
+        # Check for Computer Control commands FIRST
+        computer_control_keywords = [
+            'פתח ', 'תפתח ', 'הפעל ', 'תפעיל ', 'הרץ ', 'תריץ ',
+            'open ', 'launch ', 'start ', 'run '
+        ]
+        
+        is_computer_control = any(request.message.lower().startswith(keyword) for keyword in computer_control_keywords)
+        
+        if is_computer_control and COMPUTER_CONTROL_AVAILABLE and computer_control_agent:
+            try:
+                print(f"[API] Computer Control command detected: {request.message}")
+                result = computer_control_agent.process_command(request.message)
+                
+                if result.get("success"):
+                    # Return the action result as the response
+                    return ChatResponse(
+                        response=f"✅ {result.get('result', 'פעולה בוצעה בהצלחה')}",
+                        model_used=request.model or "computer-control",
+                        tokens=0,
+                        duration=time.time() - start_time
+                    )
+                else:
+                    error_msg = result.get('error', 'פעולה נכשלה')
+                    return ChatResponse(
+                        response=f"❌ {error_msg}",
+                        model_used=request.model or "computer-control",
+                        tokens=0,
+                        duration=time.time() - start_time
+                    )
+            except Exception as e:
+                print(f"[API] Computer Control error: {e}")
+                # Continue to normal chat if Computer Control fails
+        
         # Check if this is a complex task that requires Agent Orchestrator
         complex_task_keywords = [
             'צור פרויקט', 'create project', 'צור אפליקציה', 'create app',
             'צור תיקייה', 'create folder', 'עשה תיקייה', 'צר תיקיה', 'תיצור תיקייה',
-            'פתח דפדפן', 'open browser', 'open chrome', 'פתח כרום',
             'צור קובץ', 'create file', 'עשה קובץ',
             'רשום הודעה', 'write message',
             'הרץ פקודה', 'run command'
@@ -1280,10 +1340,30 @@ def initialize_computer_control():
                 llm=zero.llm,
                 orchestrator=zero.agent_orchestrator
             )
+            
+            # Add computer control to orchestrator tools
+            if zero.agent_orchestrator:
+                zero.agent_orchestrator.tools['computer_control'] = computer_control_wrapper
+                zero.agent_orchestrator.tools['open_browser'] = computer_control_wrapper
+                zero.agent_orchestrator.tools['open_app'] = computer_control_wrapper
+                zero.agent_orchestrator.tools['click'] = computer_control_wrapper
+                print(f"[API] Computer Control tools added: {list(zero.agent_orchestrator.tools.keys())}")
+            
             print("[API] OK Computer Control Agent ready")
         except Exception as e:
             print(f"[API] WARNING Computer Control Agent failed: {e}")
             computer_control_agent = None
+
+def computer_control_wrapper(command: str, **kwargs) -> Dict[str, Any]:
+    """Wrapper for Computer Control Agent to be used as a tool"""
+    if not computer_control_agent:
+        return {"success": False, "error": "Computer Control not initialized"}
+    
+    try:
+        result = computer_control_agent.process_command(command, kwargs)
+        return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # Pydantic models for Computer Control
 class ComputerControlRequest(BaseModel):
@@ -1293,11 +1373,11 @@ class ComputerControlRequest(BaseModel):
 class ComputerControlResponse(BaseModel):
     success: bool
     action: str
-    target: str
+    target: Optional[str] = None
     result: str
     error: Optional[str] = None
-    confidence: float
-    reasoning: str
+    confidence: Optional[float] = 0.0
+    reasoning: Optional[str] = ""
 
 class ProactiveSuggestionRequest(BaseModel):
     context: Optional[Dict[str, Any]] = None
