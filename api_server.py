@@ -630,6 +630,9 @@ async def chat(request: ChatRequest, http_request: Request):
             # Scroll commands
             'גלול ', 'תגלול ',
             'scroll ',
+            # Screenshot commands
+            'צלם מסך', 'תצלם מסך', 'צילום מסך',
+            'screenshot', 'take screenshot', 'capture screen',
             # Hotkey commands (check for + in message for keyboard shortcuts)
         ]
         

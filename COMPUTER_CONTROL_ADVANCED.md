@@ -2,6 +2,30 @@
 
 ## ✅ Implemented Features
 
+### 0. 📸 **Screenshot & Analysis** ⭐ NEW!
+Capture screen and AI-powered analysis.
+
+**Commands:**
+- `צלם מסך` - Screenshot
+- `screenshot` - Screenshot
+- `take screenshot` - Screenshot
+
+**Features:**
+- 📸 Full screen capture
+- 🤖 Automatic AI analysis (OCR, Object Detection, Colors)
+- 💾 Auto-save to `workspace/screenshots/`
+- 📝 Text extraction (Hebrew + English)
+- 🎨 Color analysis
+- 🔍 UI element detection
+
+**Example:**
+```
+צלם מסך
+-> Screenshot saved + full analysis
+```
+
+---
+
 ### 1. 🖱️ **Mouse Click**
 Click at specific screen coordinates.
 

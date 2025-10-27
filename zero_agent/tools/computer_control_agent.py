@@ -358,7 +358,48 @@ class ComputerControlAgent:
                     return {"success": False, "error": f"Could not open {action.target}: {str(e)}"}
             
             elif action.type == "screenshot":
-                return {"success": True, "result": "Screenshot taken"}
+                # Real screenshot with analysis
+                try:
+                    from .screen_capture import ScreenCapture
+                    from pathlib import Path
+                    from datetime import datetime
+                    
+                    # Create screenshots directory
+                    screenshots_dir = Path("workspace/screenshots")
+                    screenshots_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    # Generate filename
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    screenshot_path = screenshots_dir / f"screenshot_{timestamp}.png"
+                    
+                    # Capture screen
+                    capturer = ScreenCapture()
+                    img_array = capturer.capture_screen(save_path=screenshot_path)
+                    
+                    if img_array is None:
+                        return {"success": False, "error": "Screenshot failed"}
+                    
+                    # Optional: Analyze with Vision Agent if available
+                    analysis = {}
+                    if self.vision_agent:
+                        analysis = self.vision_agent.analyze_screen(str(screenshot_path))
+                    
+                    result_text = f"Screenshot saved to {screenshot_path}"
+                    if analysis.get("success"):
+                        # Add summary
+                        summary = self.vision_agent.get_screen_summary(str(screenshot_path))
+                        result_text += f"\n\nScreen Analysis:\n{summary}"
+                    
+                    return {
+                        "success": True, 
+                        "result": result_text,
+                        "screenshot_path": str(screenshot_path),
+                        "analysis": analysis
+                    }
+                except ImportError as e:
+                    return {"success": False, "error": f"Screenshot dependencies missing: {e}"}
+                except Exception as e:
+                    return {"success": False, "error": f"Screenshot failed: {str(e)}"}
             
             elif action.type == "click":
                 # Real mouse click using pyautogui
