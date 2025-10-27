@@ -110,12 +110,12 @@ class NLPCommandParser:
                 r"צור וידאו (.+)"
             ],
             "speak": [
-                r"הקרא בקול (.+)",
-                r"תקרא בקול (.+)",
-                r"דבר (.+)",
-                r"תדבר (.+)",
-                r"הגה (.+)",
-                r"תהגה (.+)"
+                r"הקרא בקול:?\s*(.+)",
+                r"תקרא בקול:?\s*(.+)",
+                r"דבר:?\s*(.+)",
+                r"תדבר:?\s*(.+)",
+                r"הגה:?\s*(.+)",
+                r"תהגה:?\s*(.+)"
             ]
         }
         
@@ -184,11 +184,11 @@ class NLPCommandParser:
                 r"render video (.+)"
             ],
             "speak": [
-                r"speak (.+)",
-                r"say (.+)",
-                r"read out (.+)",
-                r"read aloud (.+)",
-                r"voice (.+)"
+                r"speak:?\s*(.+)",
+                r"say:?\s*(.+)",
+                r"read out:?\s*(.+)",
+                r"read aloud:?\s*(.+)",
+                r"voice:?\s*(.+)"
             ]
         }
         

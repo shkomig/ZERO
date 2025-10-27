@@ -520,3 +520,4 @@ if __name__ == "__main__":
         print("No test image found. Place a screenshot named 'test_screenshot.png' to test.")
 
 
+
