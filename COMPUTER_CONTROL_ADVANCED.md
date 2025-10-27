@@ -13,7 +13,7 @@ Capture screen and AI-powered analysis.
 **Features:**
 - 📸 Full screen capture
 - 🤖 Automatic AI analysis (OCR, Object Detection, Colors)
-- 💾 Auto-save to `workspace/screenshots/`
+- 💾 Auto-save to `ZERO/screenshots/`
 - 📝 Text extraction (Hebrew + English)
 - 🎨 Color analysis
 - 🔍 UI element detection

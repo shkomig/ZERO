@@ -23,7 +23,7 @@ capture screen
 
 **תוצאה:**
 - צילום מסך מלא
-- שמירה אוטומטית ל-`workspace/screenshots/screenshot_YYYYMMDD_HHMMSS.png`
+- שמירה אוטומטית ל-`ZERO/screenshots/screenshot_YYYYMMDD_HHMMSS.png`
 - החזרת נתיב לקובץ
 
 ---
@@ -64,7 +64,7 @@ capture screen
 ### **דוגמה 1: צילום פשוט**
 ```
 User: צלם מסך
-Zero: ✅ Screenshot saved to workspace/screenshots/screenshot_20251027_193000.png
+Zero: ✅ Screenshot saved to ZERO/screenshots/screenshot_20251027_193000.png
 
 Screen Analysis:
 🖥️ Screen contains 8 UI elements
@@ -114,7 +114,7 @@ Zero: ✅ Screenshot shows Chrome browser is now open
 ## 📁 מבנה קבצים
 
 ```
-workspace/
+ZERO/
   screenshots/
     screenshot_20251027_193000.png
     screenshot_20251027_193005.png
@@ -182,7 +182,7 @@ workspace/
 
 1. **צלם מסך לפני פעולות חשובות** - לתיעוד ואימות
 2. **השתמש בניתוח** - Zero יכול לספר לך מה הוא רואה
-3. **שמור screenshots** - הם נשמרים ב-`workspace/screenshots/`
+3. **שמור screenshots** - הם נשמרים ב-`ZERO/screenshots/`
 4. **שלב עם פעולות אחרות** - צלם → נתח → פעל
 
 ---

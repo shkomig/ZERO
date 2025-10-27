@@ -365,7 +365,7 @@ class ComputerControlAgent:
                     from datetime import datetime
                     
                     # Create screenshots directory
-                    screenshots_dir = Path("workspace/screenshots")
+                    screenshots_dir = Path("ZERO/screenshots")
                     screenshots_dir.mkdir(parents=True, exist_ok=True)
                     
                     # Generate filename
