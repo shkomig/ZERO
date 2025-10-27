@@ -618,11 +618,25 @@ async def chat(request: ChatRequest, http_request: Request):
         
         # Check for Computer Control commands FIRST
         computer_control_keywords = [
+            # Open commands
             'פתח ', 'תפתח ', 'הפעל ', 'תפעיל ', 'הרץ ', 'תריץ ',
-            'open ', 'launch ', 'start ', 'run '
+            'open ', 'launch ', 'start ', 'run ',
+            # Click commands
+            'לחץ ', 'תלחץ ', 'לחיצה ',
+            'click ', 'press ',
+            # Type commands
+            'הקלד ', 'תקליד ', 'כתוב ', 'תכתוב ',
+            'type ', 'write ', 'enter ',
+            # Scroll commands
+            'גלול ', 'תגלול ',
+            'scroll ',
+            # Hotkey commands (check for + in message for keyboard shortcuts)
         ]
         
-        is_computer_control = any(request.message.lower().startswith(keyword) for keyword in computer_control_keywords)
+        # Check for keyboard shortcuts (contains + for combinations)
+        is_hotkey = '+' in request.message and any(k in request.message.lower() for k in ['ctrl', 'alt', 'shift', 'win', 'קונטרול', 'אלט', 'שיפט'])
+        
+        is_computer_control = any(request.message.lower().startswith(keyword) for keyword in computer_control_keywords) or is_hotkey
         
         if is_computer_control and COMPUTER_CONTROL_AVAILABLE and computer_control_agent:
             try:

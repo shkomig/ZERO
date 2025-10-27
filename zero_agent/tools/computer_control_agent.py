@@ -361,17 +361,76 @@ class ComputerControlAgent:
                 return {"success": True, "result": "Screenshot taken"}
             
             elif action.type == "click":
-                # Simulate click
-                return {"success": True, "result": f"Clicked {action.target}"}
+                # Real mouse click using pyautogui
+                try:
+                    import pyautogui
+                    params = action.parameters or {}
+                    
+                    # Check if coordinates provided
+                    if "x" in params and "y" in params:
+                        x, y = params["x"], params["y"]
+                        pyautogui.click(x, y)
+                        return {"success": True, "result": f"Clicked at ({x}, {y})"}
+                    else:
+                        return {"success": False, "error": "Coordinates required for click"}
+                except ImportError:
+                    return {"success": False, "error": "pyautogui not installed"}
+                except Exception as e:
+                    return {"success": False, "error": f"Click failed: {str(e)}"}
             
             elif action.type == "type":
-                text = action.parameters.get("text", "")
-                return {"success": True, "result": f"Typed: {text}"}
+                # Real keyboard typing using pyautogui
+                try:
+                    import pyautogui
+                    import time
+                    text = action.parameters.get("text", "")
+                    if text:
+                        time.sleep(0.5)  # Small delay before typing
+                        # Use write() instead of typewrite() for Unicode support (Hebrew, etc.)
+                        pyautogui.write(text, interval=0.05)
+                        return {"success": True, "result": f"Typed: {text}"}
+                    else:
+                        return {"success": False, "error": "No text provided"}
+                except ImportError:
+                    return {"success": False, "error": "pyautogui not installed"}
+                except Exception as e:
+                    return {"success": False, "error": f"Type failed: {str(e)}"}
             
             elif action.type == "scroll":
-                x = action.parameters.get("x", 0)
-                y = action.parameters.get("y", 100)
-                return {"success": True, "result": f"Scrolled {x}, {y}"}
+                # Real mouse scroll using pyautogui
+                try:
+                    import pyautogui
+                    x = action.parameters.get("x", 0)
+                    y = action.parameters.get("y", 100)
+                    
+                    # pyautogui.scroll() takes positive for up, negative for down
+                    # We convert y to scroll amount (divide by 10 for smoothness)
+                    scroll_amount = int(y / 10)
+                    pyautogui.scroll(scroll_amount)
+                    
+                    direction = "down" if y > 0 else "up" if y < 0 else "right" if x > 0 else "left"
+                    return {"success": True, "result": f"Scrolled {direction}"}
+                except ImportError:
+                    return {"success": False, "error": "pyautogui not installed"}
+                except Exception as e:
+                    return {"success": False, "error": f"Scroll failed: {str(e)}"}
+            
+            elif action.type == "hotkey":
+                # Real keyboard shortcuts using pyautogui
+                try:
+                    import pyautogui
+                    keys = action.parameters.get("keys", "")
+                    if keys:
+                        # Split by + and press the combination
+                        key_parts = [k.strip() for k in keys.split("+")]
+                        pyautogui.hotkey(*key_parts)
+                        return {"success": True, "result": f"Pressed {keys}"}
+                    else:
+                        return {"success": False, "error": "No keys provided"}
+                except ImportError:
+                    return {"success": False, "error": "pyautogui not installed"}
+                except Exception as e:
+                    return {"success": False, "error": f"Hotkey failed: {str(e)}"}
             
             else:
                 return {"success": False, "error": f"Unknown action: {action.type}"}

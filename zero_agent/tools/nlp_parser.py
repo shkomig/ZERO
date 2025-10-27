@@ -85,6 +85,13 @@ class NLPCommandParser:
                 r"תחכה (.+)",
                 r"המתן (.+)",
                 r"תהמתן (.+)"
+            ],
+            "hotkey": [
+                r"לחץ (.+\+.+)",
+                r"תלחץ (.+\+.+)",
+                r"הקש (.+\+.+)",
+                r"תקיש (.+\+.+)",
+                r"שלב מקשים (.+)"
             ]
         }
         
@@ -129,6 +136,12 @@ class NLPCommandParser:
                 r"wait (.+)",
                 r"pause (.+)",
                 r"delay (.+)"
+            ],
+            "hotkey": [
+                r"press (.+\+.+)",
+                r"hit (.+\+.+)",
+                r"keyboard (.+)",
+                r"shortcut (.+)"
             ]
         }
         
@@ -225,6 +238,8 @@ class NLPCommandParser:
                             return self._parse_screenshot_action(command, is_hebrew)
                         elif action_type == "wait":
                             return self._parse_wait_action(command, groups, is_hebrew)
+                        elif action_type == "hotkey":
+                            return self._parse_hotkey_action(command, groups, is_hebrew)
             
             return None
             
@@ -376,6 +391,35 @@ class NLPCommandParser:
             parameters={"seconds": time_seconds},
             confidence=0.8,
             reasoning=f"Wait {time_seconds} seconds"
+        )
+    
+    def _parse_hotkey_action(self, command: str, groups: Tuple, is_hebrew: bool) -> Action:
+        """Parse keyboard shortcut action"""
+        keys = groups[0] if groups else "ctrl+c"
+        
+        # Clean up keys
+        keys = keys.strip().lower()
+        
+        # Map Hebrew keys to English
+        key_map = {
+            "קונטרול": "ctrl",
+            "קונטרל": "ctrl",
+            "קטרל": "ctrl",
+            "אלט": "alt",
+            "שיפט": "shift",
+            "וין": "win",
+            "ווינדוס": "win"
+        }
+        
+        for heb_key, eng_key in key_map.items():
+            keys = keys.replace(heb_key, eng_key)
+        
+        return Action(
+            type="hotkey",
+            target="keyboard",
+            parameters={"keys": keys},
+            confidence=0.9,
+            reasoning=f"Press keyboard shortcut: {keys}"
         )
     
     def _extract_coordinates(self, text: str) -> Optional[Tuple[int, int]]:
