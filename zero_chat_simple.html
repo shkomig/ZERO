@@ -124,7 +124,7 @@
 
         .mic-btn {
             position: absolute;
-            right: 60px;
+            left: 60px;
             bottom: 12px;
             background: #f7f7f8;
             color: #666;
@@ -147,6 +147,53 @@
             color: white;
             border-color: #ef4444;
             animation: pulse 1.5s infinite;
+        }
+
+        /* VAD Button */
+        .vad-btn {
+            position: absolute;
+            left: 120px;
+            bottom: 12px;
+            background: #f7f7f8;
+            color: #666;
+            border: 1px solid #e7e7e8;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .vad-btn:hover {
+            background: #e7e7e8;
+        }
+
+        .vad-btn.active {
+            background: #10a37f;
+            color: white;
+            border-color: #10a37f;
+        }
+
+        .vad-btn.active.listening {
+            animation: pulse 2s infinite;
+        }
+
+        .vad-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            transition: transform 0.2s;
+        }
+        
+        .vad-btn.active.listening .vad-indicator {
+            transform: scale(1.3);
+            box-shadow: 0 0 8px currentColor;
         }
 
         @keyframes pulse {
@@ -175,6 +222,73 @@
         .send-btn:disabled {
             background: #d1d5db;
             cursor: not-allowed;
+        }
+        
+        /* Stop Button - Phase 2: Interrupt Handling */
+        .stop-btn {
+            position: absolute;
+            left: 12px;
+            bottom: 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: none; /* Hidden by default */
+        }
+        
+        .stop-btn:hover {
+            background: #dc2626;
+        }
+        
+        .stop-btn.active {
+            display: block;
+        }
+        
+        /* Speaker Button - Phase 2: Voice Output */
+        .speaker-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: #f7f7f8;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+        
+        .speaker-btn:hover {
+            background: #e7e7e8;
+        }
+        
+        .speaker-btn.speaking {
+            background: #10a37f;
+            border-color: #10a37f;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .speaker-btn.speaking svg {
+            fill: white;
+        }
+        
+        .speaker-indicator {
+            font-size: 11px;
+            color: #10a37f;
+            margin-left: 8px;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .speaker-indicator.active {
+            display: inline-block;
+            animation: pulse 2s infinite;
         }
 
         /* Loading Animation */
@@ -233,6 +347,9 @@
     <div class="sidebar">
         <div class="sidebar-header">Zero Agent</div>
         <button class="new-chat-btn" onclick="newChat()">+ צ'אט חדש</button>
+        <button class="new-chat-btn" id="ttsToggle" onclick="toggleTTS()" style="background: #10a37f; color: white; border-color: #10a37f;">
+            🔊 קול מופעל
+        </button>
     </div>
 
     <div class="main-content">
@@ -245,6 +362,10 @@
 
         <div class="input-area">
             <div class="input-wrapper">
+                <button class="vad-btn" id="vadBtn" onclick="toggleVAD()" title="זיהוי אוטומטי - מופעל/כבוי">
+                    <div class="vad-indicator"></div>
+                    <span id="vadStatus">VAD</span>
+                </button>
                 <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="הקלטה קולית">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -261,6 +382,7 @@
                     rows="1"
                 ></textarea>
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()">שלח</button>
+                <button class="stop-btn" id="stopBtn" onclick="stopGeneration()" title="עצור ⏹️">עצור</button>
             </div>
         </div>
     </div>
@@ -268,8 +390,159 @@
     <script>
         const API_URL = 'http://localhost:8080';
         let conversationHistory = [];
+        
+        // ============================================================
+        // Phase 2: Interrupt Handling 🛑
+        // ============================================================
+        let currentAbortController = null;
+        let isGenerating = false;
+        
+        // ============================================================
+        // Phase 2: Voice Output 🔊
+        // ============================================================
+        let isSpeaking = false;
+        let currentAudio = null;
+        let ttsEnabled = true; // Auto-play TTS by default
 
+        // ============================================================
+        // TTS Functions - Voice Output 🔊
+        // ============================================================
+        async function speakText(text, messageId) {
+            if (!ttsEnabled || !text) return;
+            
+            try {
+                console.log('🔊 Starting TTS for:', text.substring(0, 50) + '...');
+                
+                // Call TTS API
+                const response = await fetch(`${API_URL}/api/tts?text=${encodeURIComponent(text)}`);
+                
+                if (!response.ok) {
+                    console.warn('TTS service unavailable');
+                    return;
+                }
+                
+                // Get audio blob
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                // Stop current audio if playing
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                }
+                
+                // Create and play audio
+                currentAudio = new Audio(audioUrl);
+                isSpeaking = true;
+                
+                // Add speaker indicator to message
+                if (messageId) {
+                    const messageDiv = document.getElementById(messageId);
+                    if (messageDiv) {
+                        const header = messageDiv.querySelector('.message-header');
+                        if (header && !header.querySelector('.speaker-indicator')) {
+                            const indicator = document.createElement('span');
+                            indicator.className = 'speaker-indicator active';
+                            indicator.textContent = '🔊 מדבר';
+                            header.appendChild(indicator);
+                        }
+                    }
+                }
+                
+                currentAudio.onended = () => {
+                    isSpeaking = false;
+                    currentAudio = null;
+                    URL.revokeObjectURL(audioUrl);
+                    
+                    // Remove speaker indicator
+                    if (messageId) {
+                        const messageDiv = document.getElementById(messageId);
+                        if (messageDiv) {
+                            const indicator = messageDiv.querySelector('.speaker-indicator');
+                            if (indicator) {
+                                indicator.remove();
+                            }
+                        }
+                    }
+                    
+                    console.log('✅ TTS finished');
+                };
+                
+                currentAudio.onerror = (e) => {
+                    console.error('Audio playback error:', e);
+                    isSpeaking = false;
+                    currentAudio = null;
+                };
+                
+                await currentAudio.play();
+                console.log('▶️ Playing TTS audio');
+                
+            } catch (error) {
+                console.warn('TTS error:', error);
+                isSpeaking = false;
+            }
+        }
+        
+        function stopSpeaking() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+                isSpeaking = false;
+                console.log('🔇 TTS stopped');
+            }
+        }
+        
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const btn = document.getElementById('ttsToggle');
+            
+            if (ttsEnabled) {
+                btn.textContent = '🔊 קול מופעל';
+                btn.style.background = '#10a37f';
+                btn.style.borderColor = '#10a37f';
+                btn.style.color = 'white';
+                console.log('✅ TTS enabled');
+            } else {
+                btn.textContent = '🔇 קול כבוי';
+                btn.style.background = 'transparent';
+                btn.style.borderColor = 'rgba(255,255,255,0.2)';
+                btn.style.color = 'white';
+                stopSpeaking();
+                console.log('❌ TTS disabled');
+            }
+        }
+        
+        function stopGeneration() {
+            console.log('🛑 Stopping generation...');
+            
+            if (currentAbortController) {
+                currentAbortController.abort();
+                currentAbortController = null;
+            }
+            
+            isGenerating = false;
+            
+            // Stop TTS if speaking
+            stopSpeaking();
+            
+            // Hide stop button, show send button
+            document.getElementById('stopBtn').classList.remove('active');
+            document.getElementById('sendBtn').style.display = 'block';
+            
+            // Stop VAD recording if active
+            if (vadEnabled && isRecording) {
+                stopRecording();
+            }
+            
+            console.log('✅ Generation stopped');
+        }
+        
         function newChat() {
+            // Stop any ongoing generation
+            if (isGenerating) {
+                stopGeneration();
+            }
+            
             conversationHistory = [];
             const chatContainer = document.getElementById('chatContainer');
             chatContainer.innerHTML = `
@@ -284,17 +557,51 @@
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 sendMessage();
+            } else if (event.key === 'Escape' && isGenerating) {
+                event.preventDefault();
+                stopGeneration();
             }
         }
+        
+        // Global escape key handler
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && isGenerating) {
+                stopGeneration();
+            }
+        });
 
+        // ============================================================
+        // STREAMING VERSION - Phase 1 Latency Improvement! ⚡
+        // Phase 2: With Interrupt Handling! 🛑
+        // ============================================================
         async function sendMessage() {
             const input = document.getElementById('chatInput');
-            const message = input.value.trim();
+            let message = input.value.trim();
+            
+            // Remove surrounding quotes if user typed them
+            if (message.startsWith('"') && message.endsWith('"')) {
+                message = message.slice(1, -1);
+                console.log('DEBUG: Removed quotes from message:', message);
+            }
             
             if (!message) return;
+            
+            // Don't send if already generating
+            if (isGenerating) {
+                console.log('⚠️ Already generating, please wait or stop');
+                return;
+            }
 
             // Clear input
             input.value = '';
+            
+            // Show stop button, hide send button
+            isGenerating = true;
+            document.getElementById('sendBtn').style.display = 'none';
+            document.getElementById('stopBtn').classList.add('active');
+            
+            // Create new abort controller
+            currentAbortController = new AbortController();
             
             // Remove welcome message
             const welcome = document.querySelector('.welcome');
@@ -303,28 +610,184 @@
             // Add user message
             addMessage('user', message);
 
-            // Add loading message
-            const loadingId = addMessage('assistant', '<span class="loading">מחשב</span>');
+            // Add empty assistant message for streaming
+            const messageId = `msg-${Date.now()}`;
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = messageId;
+            messageDiv.innerHTML = `
+                <div class="message-header">Zero Agent</div>
+                <div class="message-content"><span class="loading">מחשב</span></div>
+            `;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
 
-            // Send to API
+            // ============================================================
+            // Phase 2: Context-Aware - Add conversation history! 🧠
+            // ============================================================
+            // Add user message to history
+            conversationHistory.push({
+                role: 'user',
+                content: message,
+                timestamp: Date.now().toString() // Convert to string!
+            });
+            
+            // Keep only last 10 messages (5 turns)
+            if (conversationHistory.length > 10) {
+                conversationHistory = conversationHistory.slice(-10);
+            }
+            
+            // Streaming temporarily disabled - use regular chat
+            // Will enable after fixing stream_generate method
             try {
-                const response = await fetch(`${API_URL}/api/chat`, {
+                // Force fallback to regular chat for now
+                throw new Error('Streaming disabled - using regular chat');
+                
+                const response = await fetch(`${API_URL}/api/chat/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ 
+                        message: message,
+                        conversation_history: conversationHistory.slice(0, -1) // Send history without current message
+                    }),
+                    signal: currentAbortController.signal
                 });
 
-                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error('Streaming not available, falling back to regular chat');
+                }
 
-                // Remove loading message
-                document.getElementById(loadingId).remove();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                let fullResponse = '';
+                let isFirstChunk = true;
+                const contentDiv = messageDiv.querySelector('.message-content');
 
-                // Add assistant response
-                addMessage('assistant', data.response || 'מצטער, לא הצלחתי לעבד את הבקשה');
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                
+                                if (data.error) {
+                                    contentDiv.textContent = `שגיאה: ${data.error}`;
+                                    return;
+                                }
+                                
+                                if (data.chunk) {
+                                    // Remove loading indicator on first chunk
+                                    if (isFirstChunk) {
+                                        contentDiv.innerHTML = '';
+                                        isFirstChunk = false;
+                                    }
+                                    
+                                    fullResponse += data.chunk;
+                                    contentDiv.textContent = fullResponse;
+                                    container.scrollTop = container.scrollHeight;
+                                }
+                                
+                                if (data.done) {
+                                    console.log('✅ Streaming completed');
+                                    // Add assistant response to history
+                                    conversationHistory.push({
+                                        role: 'assistant',
+                                        content: fullResponse,
+                                        timestamp: Date.now()
+                                    });
+                                    return;
+                                }
+                            } catch (e) {
+                                // Skip invalid JSON
+                            }
+                        }
+                    }
+                }
 
             } catch (error) {
-                document.getElementById(loadingId).remove();
-                addMessage('assistant', 'שגיאה בתקשורת עם השרת');
+                // Check if aborted
+                if (error.name === 'AbortError') {
+                    console.log('🛑 Request aborted by user');
+                    const contentDiv = messageDiv.querySelector('.message-content');
+                    contentDiv.textContent = 'בקשה נעצרה';
+                    isGenerating = false;
+                    document.getElementById('stopBtn').classList.remove('active');
+                    document.getElementById('sendBtn').style.display = 'block';
+                    return;
+                }
+                
+                console.warn('Streaming failed, falling back to regular chat:', error);
+                
+                // Fallback to regular non-streaming chat
+                try {
+                    const requestBody = { 
+                        message: message,
+                        conversation_history: conversationHistory ? conversationHistory.slice(0, -1) : []
+                    };
+                    
+                    console.log('DEBUG: Raw message value:', message);
+                    console.log('DEBUG: Message type:', typeof message);
+                    console.log('DEBUG: Message length:', message.length);
+                    console.log('DEBUG: Sending request body:', JSON.stringify(requestBody, null, 2));
+                    console.log('DEBUG: conversationHistory type:', typeof conversationHistory);
+                    console.log('DEBUG: conversationHistory value:', conversationHistory);
+                    console.log('DEBUG: conversationHistory is array?', Array.isArray(conversationHistory));
+                    console.log('DEBUG: conversationHistory length:', conversationHistory ? conversationHistory.length : 'undefined');
+                    console.log('DEBUG: conversationHistory.slice(0, -1):', conversationHistory ? conversationHistory.slice(0, -1) : 'undefined');
+                    
+                    const response = await fetch(`${API_URL}/api/chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody),
+                        signal: currentAbortController.signal
+                    });
+
+                    if (!response.ok) {
+                        console.error('API Error:', response.status, response.statusText);
+                        const errorText = await response.text();
+                        console.error('Error response:', errorText);
+                        throw new Error(`API Error: ${response.status} - ${errorText}`);
+                    }
+                    
+                    const data = await response.json();
+                    const contentDiv = messageDiv.querySelector('.message-content');
+                    const responseText = data.response || 'מצטער, לא הצלחתי לעבד את הבקשה';
+                    contentDiv.textContent = responseText;
+                    
+                    // Add to history
+                    conversationHistory.push({
+                        role: 'assistant',
+                        content: responseText,
+                        timestamp: Date.now().toString() // Convert to string!
+                    });
+                    
+                    // Auto-play TTS for the response
+                    await speakText(responseText, messageId);
+
+                } catch (fallbackError) {
+                    // Check if aborted
+                    if (fallbackError.name === 'AbortError') {
+                        console.log('🛑 Fallback request also aborted');
+                        const contentDiv = messageDiv.querySelector('.message-content');
+                        contentDiv.textContent = 'בקשה נעצרה';
+                    } else {
+                        const contentDiv = messageDiv.querySelector('.message-content');
+                        contentDiv.textContent = 'שגיאה בתקשורת עם השרת';
+                    }
+                } finally {
+                    // Always restore UI state
+                    isGenerating = false;
+                    document.getElementById('stopBtn').classList.remove('active');
+                    document.getElementById('sendBtn').style.display = 'block';
+                    currentAbortController = null;
+                }
             }
         }
 
@@ -379,6 +842,12 @@
                     const transcript = event.results[0][0].transcript;
                     document.getElementById('chatInput').value = transcript;
                     stopRecording();
+                    
+                    // Auto-send if VAD is enabled
+                    if (vadEnabled && transcript.trim()) {
+                        console.log('✅ VAD auto-sending message:', transcript);
+                        setTimeout(() => sendMessage(), 100); // Small delay to ensure UI updates
+                    }
                 };
 
                 recognition.onerror = (event) => {
@@ -427,6 +896,171 @@
             }
         }
 
+        // ============================================================
+        // Voice Activity Detection (VAD) - Phase 2 Enhanced! 🎤
+        // ============================================================
+        let vadEnabled = false;
+        let vadAudioContext = null;
+        let vadAnalyser = null;
+        let vadCheckInterval = null;
+        let vadSpeechDetected = false;
+        let vadSilenceStart = null;
+        let vadStream = null;
+        
+        // Improved thresholds for better speech detection
+        const VAD_SILENCE_THRESHOLD = -55; // dB (lower = more sensitive to silence)
+        const VAD_SILENCE_DURATION = 1200; // 1.2 seconds of silence to stop
+        const VAD_SPEECH_THRESHOLD = -42; // dB to start (higher = less false positives)
+        const VAD_MIN_SPEECH_DURATION = 300; // Minimum 300ms of speech to trigger
+        
+        let vadSpeechStartTime = null;
+        
+        async function toggleVAD() {
+            vadEnabled = !vadEnabled;
+            const vadBtn = document.getElementById('vadBtn');
+            const vadStatus = document.getElementById('vadStatus');
+            
+            if (vadEnabled) {
+                // Turn ON VAD
+                vadBtn.classList.add('active');
+                vadStatus.textContent = 'ON';
+                await startVAD();
+                console.log('✅ VAD Enabled - Listening automatically...');
+            } else {
+                // Turn OFF VAD
+                vadBtn.classList.remove('active', 'listening');
+                vadStatus.textContent = 'VAD';
+                stopVAD();
+                console.log('❌ VAD Disabled');
+            }
+        }
+        
+        async function startVAD() {
+            try {
+                // Request microphone access with better audio constraints
+                vadStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // Setup audio context
+                vadAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                vadAnalyser = vadAudioContext.createAnalyser();
+                vadAnalyser.fftSize = 512; // Increased for better frequency resolution
+                vadAnalyser.smoothingTimeConstant = 0.8; // Smoother transitions
+                
+                const source = vadAudioContext.createMediaStreamSource(vadStream);
+                source.connect(vadAnalyser);
+                
+                // Start monitoring at higher frequency for better responsiveness
+                vadCheckInterval = setInterval(checkVoiceActivity, 50);
+                
+                console.log('🎤 VAD monitoring started (enhanced mode)');
+                
+            } catch (error) {
+                console.error('VAD initialization failed:', error);
+                alert('לא ניתן לגשת למיקרופון. אנא אשר הרשאות.');
+                vadEnabled = false;
+                document.getElementById('vadBtn').classList.remove('active');
+                document.getElementById('vadStatus').textContent = 'VAD';
+            }
+        }
+        
+        function stopVAD() {
+            if (vadCheckInterval) {
+                clearInterval(vadCheckInterval);
+                vadCheckInterval = null;
+            }
+            
+            if (vadStream) {
+                vadStream.getTracks().forEach(track => track.stop());
+                vadStream = null;
+            }
+            
+            if (vadAudioContext) {
+                vadAudioContext.close();
+                vadAudioContext = null;
+            }
+            
+            vadSpeechDetected = false;
+            vadSilenceStart = null;
+            vadSpeechStartTime = null;
+        }
+        
+        function checkVoiceActivity() {
+            if (!vadAnalyser || !vadEnabled) return;
+            
+            const dataArray = new Uint8Array(vadAnalyser.frequencyBinCount);
+            vadAnalyser.getByteFrequencyData(dataArray);
+            
+            // Calculate volume with better algorithm (weighted average focusing on speech frequencies)
+            let sum = 0;
+            let weightedSum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                // Weight speech frequencies (roughly 100Hz-4kHz) more heavily
+                const weight = (i >= 5 && i <= 80) ? 1.5 : 1.0;
+                weightedSum += dataArray[i] * weight;
+                sum += weight;
+            }
+            const average = weightedSum / sum;
+            const volumeDB = 20 * Math.log10(average / 255);
+            
+            const vadBtn = document.getElementById('vadBtn');
+            
+            // Check for speech
+            if (volumeDB > VAD_SPEECH_THRESHOLD) {
+                // Speech detected!
+                if (!vadSpeechDetected) {
+                    if (!vadSpeechStartTime) {
+                        vadSpeechStartTime = Date.now();
+                    } else if (Date.now() - vadSpeechStartTime > VAD_MIN_SPEECH_DURATION) {
+                        // Speech long enough - start recording
+                        vadSpeechDetected = true;
+                        vadSilenceStart = null;
+                        vadBtn.classList.add('listening');
+                        console.log('🗣️ Speech detected! Starting recording... (volume: ' + volumeDB.toFixed(1) + ' dB)');
+                        startRecording();
+                    }
+                } else {
+                    // Continue speech - reset silence timer
+                    vadSilenceStart = null;
+                }
+            } else if (volumeDB < VAD_SILENCE_THRESHOLD) {
+                // Silence detected
+                if (vadSpeechDetected) {
+                    if (!vadSilenceStart) {
+                        vadSilenceStart = Date.now();
+                    } else if (Date.now() - vadSilenceStart > VAD_SILENCE_DURATION) {
+                        // Silence long enough - stop and send
+                        vadSpeechDetected = false;
+                        vadSilenceStart = null;
+                        vadSpeechStartTime = null;
+                        vadBtn.classList.remove('listening');
+                        console.log('🔇 Silence detected. Stopping and sending...');
+                        stopRecordingAndSend();
+                    }
+                } else {
+                    // Not speaking yet - reset speech start timer
+                    vadSpeechStartTime = null;
+                }
+            } else {
+                // In between - maintain current state but reset silence timer
+                if (vadSpeechDetected) {
+                    vadSilenceStart = null;
+                }
+            }
+        }
+        
+        function stopRecordingAndSend() {
+            if (recognition && isRecording) {
+                recognition.stop();
+                // The recognition.onresult will handle sending
+            }
+        }
+        
         // Initialize voice recognition on load
         window.addEventListener('load', () => {
             initVoiceRecognition();
@@ -434,6 +1068,7 @@
     </script>
 </body>
 </html>
+
 
 
 

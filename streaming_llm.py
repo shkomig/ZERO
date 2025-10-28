@@ -17,14 +17,14 @@ class StreamingMultiModelLLM:
     Displays responses in real-time as they're generated
     """
     
-    # Model configurations (same as before)
+    # Model configurations (updated with fast qwen2.5:3b!)
     MODELS = {
         "fast": {
-            "name": "llama3.1:8b",
-            "description": "Fast, good for simple tasks",
-            "size": "4.9GB",
-            "speed": "⚡⚡⚡",
-            "quality": "⭐⭐⭐"
+            "name": "qwen2.5:3b",
+            "description": "Ultra-fast chat model, excellent Hebrew support",
+            "size": "1.9GB",
+            "speed": "⚡⚡⚡⚡⚡",
+            "quality": "⭐⭐⭐⭐"
         },
         "coder": {
             "name": "qwen2.5-coder:32b",

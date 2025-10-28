@@ -23,7 +23,7 @@ Install:
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import asyncio
@@ -404,6 +404,30 @@ async def startup_event():
         if COMPUTER_CONTROL_AVAILABLE:
             initialize_computer_control()
             print("[API] Computer Control Agent initialized")
+        
+        # ============================================================
+        # Phase 1: Preload LLM Model (eliminate cold start!)
+        # ============================================================
+        print("[API] Preloading LLM model...")
+        try:
+            import requests
+            # Warm up the model with a simple request
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "qwen2.5:3b",
+                    "prompt": "test",
+                    "stream": False
+                },
+                timeout=30
+            )
+            if response.status_code == 200:
+                print("[API] OK LLM model preloaded successfully! (No more cold start)")
+            else:
+                print(f"[API] WARNING LLM preload responded with code {response.status_code}")
+        except Exception as preload_error:
+            print(f"[API] WARNING LLM preload failed (will load on first request): {preload_error}")
+        
     except Exception as e:
         print(f"[API] ERROR Initialization failed: {e}")
         raise
@@ -476,6 +500,41 @@ async def serve_simple():
     if html_path.exists():
         return FileResponse(html_path)
     raise HTTPException(status_code=404, detail="Simple interface not found")
+
+
+@app.get("/api/tts")
+async def text_to_speech(text: str):
+    """
+    Text-to-Speech endpoint - converts text to audio
+    
+    Phase 2: Voice Output support
+    """
+    try:
+        import requests
+        from fastapi.responses import Response
+        
+        # Call TTS service (Hebrew TTS on port 5002)
+        tts_url = f"http://localhost:5002/tts?text={text}"
+        response = requests.get(tts_url, timeout=10)
+        
+        if response.status_code == 200:
+            return Response(
+                content=response.content,
+                media_type="audio/wav",
+                headers={
+                    "Content-Disposition": "inline",
+                    "Cache-Control": "no-cache"
+                }
+            )
+        else:
+            raise HTTPException(status_code=503, detail="TTS service unavailable")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"[TTS] Service unavailable: {e}")
+        raise HTTPException(status_code=503, detail="TTS service not running")
+    except Exception as e:
+        print(f"[TTS] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/agent/direct")
@@ -1582,6 +1641,124 @@ async def get_learning_stats():
             stats={},
             error=str(e)
         )
+
+
+# ============================================================================
+# Streaming Chat Endpoint (Phase 1 - Latency Improvement)
+# ============================================================================
+
+@app.post("/api/chat/stream")
+async def chat_stream(request: Request):
+    """
+    Streaming chat endpoint - returns response word by word in real-time
+    
+    Real-time streaming response
+    """
+    import json
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Parse request
+        data = await request.json()
+        message = data.get("message", "").strip()
+        conversation_history = data.get("conversation_history", [])
+        
+        # DEBUG: Log the incoming request
+        logger.info(f"[DEBUG] Received request data: {data}")
+        logger.info(f"[DEBUG] Message: '{message}'")
+        logger.info(f"[DEBUG] Conversation history type: {type(conversation_history)}")
+        logger.info(f"[DEBUG] Conversation history value: {conversation_history}")
+        
+        if not message:
+            async def error_gen():
+                yield f"data: {json.dumps({'error': 'No message provided'})}\n\n"
+            return StreamingResponse(error_gen(), media_type="text/event-stream")
+        
+        # Log context
+        logger.info(f"[CONTEXT] History length: {len(conversation_history)} messages")
+        
+        # Define computer control keywords
+        computer_control_keywords = [
+            # Open commands
+            'פתח ', 'תפתח ', 'הפעל ', 'תפעיל ', 'הרץ ', 'תריץ ',
+            'open ', 'launch ', 'start ', 'run ',
+            # Click commands
+            'לחץ ', 'תלחץ ', 'קליק ', 'click ',
+            # Type commands
+            'כתוב ', 'תכתוב ', 'הקלד ', 'תקליד ', 'type ', 'write ',
+            # Other
+            'צלם מסך', 'screenshot', 'סגור', 'close'
+        ]
+        
+        # Check if it's a computer control command (these don't stream)
+        if any(kw in message.lower() for kw in computer_control_keywords):
+            logger.info(f"[STREAM] Computer Control command detected: {message}")
+            
+            async def computer_control_gen():
+                result = computer_control_agent.execute_from_text(message)
+                response_text = result.get('result', 'פעולה בוצעה')
+                yield f"data: {json.dumps({'chunk': response_text, 'full': response_text, 'done': True})}\n\n"
+            
+            return StreamingResponse(computer_control_gen(), media_type="text/event-stream")
+        
+        # Regular LLM streaming
+        logger.info(f"[STREAM] Starting streaming response for: {message[:50]}...")
+        
+        async def generate():
+            try:
+                full_response = ""
+                chunk_count = 0
+                
+                # Get streaming LLM
+                llm = zero.llm if hasattr(zero, 'llm') else StreamingMultiModelLLM()
+                
+                # Build prompt with context (Phase 2: Context-Aware!)
+                prompt_parts = ["אתה Zero Agent. ענה בעברית בקצרה וברור."]
+                
+                # Add conversation history if available
+                if conversation_history:
+                    prompt_parts.append("\nהקשר השיחה:")
+                    for msg in conversation_history[-6:]:  # Last 3 turns
+                        role = "ש" if msg.get("role") == "user" else "ת"
+                        content = msg.get("content", "")
+                        prompt_parts.append(f"{role}: {content}")
+                
+                # Add current question
+                prompt_parts.append(f"ש: {message}")
+                prompt_parts.append("ת: ")
+                
+                prompt = "\n".join(prompt_parts)
+                
+                # Stream chunks
+                for chunk in llm.stream_generate(prompt):
+                    full_response += chunk
+                    chunk_count += 1
+                    
+                    yield f"data: {json.dumps({'chunk': chunk, 'full': full_response, 'done': False})}\n\n"
+                    
+                    # Small delay to avoid overwhelming the client
+                    await asyncio.sleep(0.01)
+                
+                # Send final done signal
+                yield f"data: {json.dumps({'chunk': '', 'full': full_response, 'done': True})}\n\n"
+                
+                logger.info(f"[STREAM] Completed: {chunk_count} chunks sent")
+                
+            except Exception as e:
+                logger.error(f"[STREAM] Error during generation: {e}")
+                yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+        
+        return StreamingResponse(generate(), media_type="text/event-stream")
+        
+    except Exception as e:
+        logger.error(f"[STREAM] Request error: {e}")
+        error_msg = str(e)  # Capture error message in outer scope
+        async def error_gen():
+            yield f"data: {json.dumps({'error': error_msg})}\n\n"
+        return StreamingResponse(error_gen(), media_type="text/event-stream")
+
 
 # ============================================================================
 # Run Server

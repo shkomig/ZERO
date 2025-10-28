@@ -16,20 +16,21 @@ class ModelRouter:
     # Keywords for model selection
     KEYWORDS = {
         "coder": [
-            "code", "python", "javascript", "java", "programming", "debug",
-            "function", "class", "api", "script", "algorithm", "syntax",
-            "compile", "error", "bug", "refactor", "optimize code", "write code",
-            "program", "developer", "software", "import", "variable"
+            "write code", "write a function", "write a script", "debug this code",
+            "fix this code", "refactor code", "optimize code", "code review",
+            "implement", "create a class", "create a function", "כתוב קוד",
+            "בנה פונקציה", "תקן את הקוד"
         ],
         "smart": [
-            "analyze", "explain deeply", "philosophy", "complex", "reasoning",
+            "analyze deeply", "explain in detail", "philosophy", "complex reasoning",
             "think step by step", "detailed analysis", "comprehensive", "evaluate",
             "compare thoroughly", "research", "deep dive", "critical thinking",
             "elaborate", "nuanced", "sophisticated", "intricate"
         ],
         "fast": [
-            "quick", "simple", "what is", "calculate", "convert", "translate",
-            "define", "summarize briefly", "list", "count", "basic", "easy"
+            "quick", "simple", "what is", "מה זה", "calculate", "convert", "translate",
+            "define", "summarize", "list", "count", "basic", "easy", "explain",
+            "?", "כמה", "איך", "למה", "מתי"
         ]
     }
     
@@ -78,8 +79,8 @@ class ModelRouter:
         elif word_count > 30:
             scores["smart"] += 2
         
-        # Code-specific patterns
-        if any(pattern in task for pattern in ['```', 'def ', 'class ', 'import ', 'function', '()', '{}']):
+        # Code-specific patterns (only actual code blocks)
+        if any(pattern in task for pattern in ['```', 'def ', 'class ', 'import ', '()\n', '{\n']):
             scores["coder"] += 3
         
         # Question marks suggest simple queries
@@ -97,10 +98,10 @@ class ModelRouter:
         if best_model[1] == 0:
             return "fast"  # Default for generic tasks
         
-        # If tie between models, prefer in this order: coder > smart > balanced > fast
+        # If tie between models, prefer in this order: fast > smart > balanced > coder
         if list(scores.values()).count(best_model[1]) > 1:
-            if scores["coder"] == best_model[1]:
-                return "coder"
+            if scores["fast"] == best_model[1]:
+                return "fast"
             elif scores["smart"] == best_model[1]:
                 return "smart"
             elif scores["balanced"] == best_model[1]:
@@ -126,7 +127,7 @@ class ModelRouter:
         
         # Explain decision
         if model == "coder":
-            if any(kw in task_lower for kw in ["code", "python", "programming"]):
+            if any(kw in task_lower for kw in ["write code", "debug", "implement"]):
                 reasons.append("Task involves coding")
             if any(pattern in task for pattern in ['```', 'def ', 'class ']):
                 reasons.append("Contains code syntax")
