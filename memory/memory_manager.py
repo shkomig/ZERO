@@ -37,7 +37,7 @@ class MemoryManager:
         # Initialize short-term memory
         print("   [Memory] Initializing short-term memory...")
         self.short_term = ShortTermMemory(memory_dir)
-        print("   [Memory] ✓ Short-term memory ready")
+        print("   [Memory] OK Short-term memory ready")
         
         # Initialize RAG connector
         self.rag_enabled = enable_rag
@@ -48,12 +48,12 @@ class MemoryManager:
                 self.rag_builder = RAGContextBuilder(self.rag)
                 
                 if self.rag.is_available():
-                    print("   [Memory] ✓ RAG system connected")
+                    print("   [Memory] OK RAG system connected")
                 else:
-                    print("   [Memory] ⚠️  RAG system not available (will continue without it)")
+                    print("   [Memory] WARNING RAG system not available (will continue without it)")
                     self.rag_enabled = False
             except Exception as e:
-                print(f"   [Memory] ⚠️  RAG connection failed: {str(e)}")
+                print(f"   [Memory] WARNING RAG connection failed: {str(e)}")
                 self.rag_enabled = False
         else:
             print("   [Memory] RAG disabled")
