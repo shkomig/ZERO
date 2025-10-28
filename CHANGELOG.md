@@ -1,5 +1,8 @@
 # Changelog
 
+## [v3.0.0] - $(date +%Y-%m-%d)
+
+
 ## [v2.0.2] - $(date +%Y-%m-%d)
 
 
