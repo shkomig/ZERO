@@ -1,0 +1,17 @@
+{
+  "_from_model_config": true,
+  "attn_softmax_bf16": null,
+  "bos_token_id": 1,
+  "bucket_size": -1,
+  "eos_token_id": 2,
+  "flash_attention_recompute": false,
+  "ignore_eos": null,
+  "kv_cache_fp8": null,
+  "limit_hpu_graphs": null,
+  "reduce_recompile": null,
+  "reuse_cache": null,
+  "static_shapes": null,
+  "transformers_version": "4.37.2",
+  "trim_logits": null,
+  "use_flash_attention": true
+}

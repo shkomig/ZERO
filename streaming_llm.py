@@ -17,45 +17,63 @@ class StreamingMultiModelLLM:
     Displays responses in real-time as they're generated
     """
     
-    # Model configurations (updated with fast qwen2.5:3b!)
+    # Model configurations - NOW WITH HEBREW SUPPORT!
     MODELS = {
-        "fast": {
-            "name": "qwen2.5:3b",
-            "description": "Ultra-fast chat model, excellent Hebrew support",
-            "size": "1.9GB",
-            "speed": "⚡⚡⚡⚡⚡",
-            "quality": "⭐⭐⭐⭐"
-        },
-        "coder": {
-            "name": "qwen2.5-coder:32b",
-            "description": "Expert in coding tasks",
-            "size": "19GB",
-            "speed": "⚡⚡",
-            "quality": "⭐⭐⭐⭐⭐"
+        "hebrew": {
+            "name": "mistral",
+            "description": "Mistral - Excellent Hebrew support (95%+ accuracy)",
+            "size": "4.4GB",
+            "speed": "⚡⚡⚡⚡",
+            "quality": "⭐⭐⭐⭐⭐",
+            "use_transformers": False  # Use Ollama (much easier!)
         },
         "smart": {
             "name": "deepseek-r1:32b",
             "description": "Deep reasoning, complex tasks",
             "size": "19GB",
             "speed": "⚡⚡",
-            "quality": "⭐⭐⭐⭐⭐"
+            "quality": "⭐⭐⭐⭐⭐",
+            "use_transformers": False
+        },
+        "coder": {
+            "name": "qwen2.5-coder:32b",
+            "description": "Expert in coding tasks",
+            "size": "19GB",
+            "speed": "⚡⚡",
+            "quality": "⭐⭐⭐⭐⭐",
+            "use_transformers": False
         },
         "balanced": {
             "name": "gpt-oss:20b-cloud",
             "description": "Balanced speed and quality",
             "size": "Unknown",
             "speed": "⚡⚡",
-            "quality": "⭐⭐⭐⭐"
+            "quality": "⭐⭐⭐⭐",
+            "use_transformers": False
         }
     }
     
     def __init__(self, 
-                 default_model: str = "fast",
+                 default_model: str = "hebrew",  # Default to Hebrew model!
                  base_url: str = "http://localhost:11434"):
         self.default_model = default_model
         self.base_url = base_url
         self.current_model = self.MODELS[default_model]["name"]
         self.stats = {model: 0 for model in self.MODELS.keys()}
+        
+        # Initialize Hebrew LLM if needed
+        self.hebrew_llm = None
+        if self.MODELS[default_model].get("use_transformers"):
+            try:
+                from hebrew_llm import get_hebrew_llm
+                self.hebrew_llm = get_hebrew_llm()
+                print("[StreamingLLM] ✅ Hebrew LLM initialized!")
+            except Exception as e:
+                print(f"[StreamingLLM] ⚠️ Hebrew LLM not available: {e}")
+                print("[StreamingLLM] Falling back to Ollama models")
+                # Fall back to smart model
+                self.default_model = "smart"
+                self.current_model = self.MODELS["smart"]["name"]
         
     def generate_stream(self,
                        prompt: str,
@@ -76,11 +94,26 @@ class StreamingMultiModelLLM:
         """
         # Select model
         if model and model in self.MODELS:
+            model_key = model
             model_name = self.MODELS[model]["name"]
             self.stats[model] += 1
         else:
+            model_key = self.default_model
             model_name = self.current_model
             self.stats[self.default_model] += 1
+        
+        # Check if this is a HuggingFace Transformers model
+        if self.MODELS[model_key].get("use_transformers") and self.hebrew_llm:
+            # Use Hebrew LLM
+            try:
+                for chunk in self.hebrew_llm.generate_stream(prompt, max_tokens=max_tokens):
+                    if callback:
+                        callback(chunk)
+                    yield chunk
+                return
+            except Exception as e:
+                print(f"[StreamingLLM] Hebrew LLM failed: {e}, falling back to Ollama")
+                # Fall through to Ollama
         
         try:
             url = f"{self.base_url}/api/generate"

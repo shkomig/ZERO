@@ -103,11 +103,14 @@
             max-width: 800px;
             margin: 0 auto;
             position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .chat-input {
-            width: 100%;
-            padding: 12px 48px 12px 16px;
+            flex: 1;
+            padding: 12px 16px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
             font-size: 16px;
@@ -123,9 +126,6 @@
         }
 
         .mic-btn {
-            position: absolute;
-            left: 60px;
-            bottom: 12px;
             background: #f7f7f8;
             color: #666;
             border: 1px solid #ddd;
@@ -136,6 +136,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .mic-btn:hover {
@@ -151,9 +152,6 @@
 
         /* VAD Button */
         .vad-btn {
-            position: absolute;
-            left: 120px;
-            bottom: 12px;
             background: #f7f7f8;
             color: #666;
             border: 1px solid #e7e7e8;
@@ -167,6 +165,7 @@
             gap: 6px;
             transition: all 0.2s;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .vad-btn:hover {
@@ -202,9 +201,6 @@
         }
 
         .send-btn {
-            position: absolute;
-            left: 12px;
-            bottom: 12px;
             background: #10a37f;
             color: white;
             border: none;
@@ -213,6 +209,7 @@
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .send-btn:hover {
@@ -226,9 +223,6 @@
         
         /* Stop Button - Phase 2: Interrupt Handling */
         .stop-btn {
-            position: absolute;
-            left: 12px;
-            bottom: 12px;
             background: #ef4444;
             color: white;
             border: none;
@@ -239,15 +233,13 @@
             font-weight: 600;
             transition: all 0.2s;
             display: none; /* Hidden by default */
+            flex-shrink: 0;
         }
         
         .stop-btn:hover {
             background: #dc2626;
         }
         
-        .stop-btn.active {
-            display: block;
-        }
         
         /* Speaker Button - Phase 2: Voice Output */
         .speaker-btn {
@@ -364,7 +356,7 @@
             <div class="input-wrapper">
                 <button class="vad-btn" id="vadBtn" onclick="toggleVAD()" title="זיהוי אוטומטי - מופעל/כבוי">
                     <div class="vad-indicator"></div>
-                    <span id="vadStatus">VAD</span>
+                    <span id="vadStatus">🎤 VAD כבוי</span>
                 </button>
                 <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="הקלטה קולית">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -382,7 +374,7 @@
                     rows="1"
                 ></textarea>
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()">שלח</button>
-                <button class="stop-btn" id="stopBtn" onclick="stopGeneration()" title="עצור ⏹️">עצור</button>
+                <button class="stop-btn" id="stopBtn" onclick="stopGeneration()" title="עצור ⏹️" style="display: none;">עצור</button>
             </div>
         </div>
     </div>
@@ -390,6 +382,13 @@
     <script>
         const API_URL = 'http://localhost:8080';
         let conversationHistory = [];
+        
+        // ============================================================
+        // Global Variables - Must be declared first! 🌐
+        // ============================================================
+        let vadEnabled = false;
+        let isRecording = false;
+        let recognition = null;
         
         // ============================================================
         // Phase 2: Interrupt Handling 🛑
@@ -407,17 +406,144 @@
         // ============================================================
         // TTS Functions - Voice Output 🔊
         // ============================================================
+        // Advanced Web Speech API (Browser TTS) - High Quality Voice
+        let synthesis = null;
+        let currentUtterance = null;
+        let hebrewVoice = null;
+        let voiceInitialized = false;
+        
+        // Initialize synthesis after page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            synthesis = window.speechSynthesis;
+            console.log('🔊 Speech synthesis initialized');
+        });
+        
+        // Initialize Hebrew voice on page load
+        function initializeVoice() {
+            if (voiceInitialized) return;
+            
+            // Check if synthesis is available
+            if (!synthesis) {
+                console.log('🔊 Speech synthesis not available yet, retrying...');
+                setTimeout(initializeVoice, 100);
+                return;
+            }
+            
+            const voices = synthesis.getVoices();
+            if (voices.length > 0) {
+                // Find best Hebrew voice
+                hebrewVoice = voices.find(voice => 
+                    voice.lang.startsWith('he') || 
+                    voice.name.includes('Hebrew') ||
+                    voice.name.includes('עברית')
+                ) || voices.find(voice => voice.lang.startsWith('he')) || voices[0];
+                
+                console.log('🎤 Selected voice:', hebrewVoice ? hebrewVoice.name : 'Default');
+                voiceInitialized = true;
+            } else {
+                // Voices not loaded yet, try again later
+                setTimeout(initializeVoice, 100);
+            }
+        }
+        
+        // Initialize voice when voices are loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            if (synthesis) {
+                synthesis.onvoiceschanged = initializeVoice;
+                initializeVoice();
+            }
+        });
+        
         async function speakText(text, messageId) {
-            if (!ttsEnabled || !text) return;
+            if (!ttsEnabled || !text) {
+                console.log('🔊 TTS disabled or no text:', {ttsEnabled, text: text ? text.substring(0, 20) : 'null'});
+                return;
+            }
+            
+            // Check if synthesis is available
+            if (!synthesis) {
+                console.log('🔊 Speech synthesis not available, skipping TTS');
+                return;
+            }
             
             try {
-                console.log('🔊 Starting TTS for:', text.substring(0, 50) + '...');
+                console.log('🔊 Starting HIGH-QUALITY TTS for:', text.substring(0, 50) + '...');
+                console.log('🔊 TTS Settings:', {ttsEnabled, voiceInitialized, hebrewVoice: hebrewVoice?.name});
                 
-                // Call TTS API
+                // Use Advanced Browser TTS (Web Speech API) - High Quality!
+                if ('speechSynthesis' in window) {
+                    // Stop current speech immediately
+                    if (currentUtterance) {
+                        synthesis.cancel();
+                    }
+                    
+                    // Wait for voices to load
+                    if (!voiceInitialized) {
+                        await new Promise(resolve => {
+                            const checkVoice = () => {
+                                if (voiceInitialized) resolve();
+                                else setTimeout(checkVoice, 50);
+                            };
+                            checkVoice();
+                        });
+                    }
+                    
+                    currentUtterance = new SpeechSynthesisUtterance(text);
+                    currentUtterance.lang = 'he-IL'; // Hebrew
+                    currentUtterance.rate = 0.9; // Slightly slower for clarity
+                    currentUtterance.pitch = 1.1; // Slightly higher for friendliness
+                    currentUtterance.volume = 1.0; // Full volume
+                    
+                    // Use best Hebrew voice if available
+                    if (hebrewVoice) {
+                        currentUtterance.voice = hebrewVoice;
+                    }
+                    
+                    isSpeaking = true;
+                    
+                    // Add speaker indicator
+                    if (messageId) {
+                        let messageDiv = document.getElementById(messageId);
+                        if (messageDiv) {
+                            let header = messageDiv.querySelector('.message-header');
+                            if (header && !header.querySelector('.speaker-indicator')) {
+                                let indicator = document.createElement('span');
+                                indicator.className = 'speaker-indicator active';
+                                indicator.textContent = '🔊 מדבר';
+                                header.appendChild(indicator);
+                            }
+                        }
+                    }
+                    
+                    currentUtterance.onend = () => {
+                        isSpeaking = false;
+                        currentUtterance = null;
+                        
+                        // Remove speaker indicator
+                        if (messageId) {
+                            let messageDiv = document.getElementById(messageId);
+                            if (messageDiv) {
+                                let indicator = messageDiv.querySelector('.speaker-indicator');
+                                if (indicator) {
+                                    indicator.remove();
+                                }
+                            }
+                        }
+                        
+                        console.log('✅ TTS finished');
+                    };
+                    
+                    synthesis.speak(currentUtterance);
+                    console.log('✅ Using Browser TTS (Web Speech API)');
+                    console.log('🔊 Speech started with voice:', currentUtterance.voice?.name || 'Default');
+                    return;
+                }
+                
+                // Fallback: Try server TTS
                 const response = await fetch(`${API_URL}/api/tts?text=${encodeURIComponent(text)}`);
                 
                 if (!response.ok) {
-                    console.warn('TTS service unavailable');
+                    console.warn('TTS service unavailable, and Browser TTS not supported');
                     return;
                 }
                 
@@ -437,11 +563,11 @@
                 
                 // Add speaker indicator to message
                 if (messageId) {
-                    const messageDiv = document.getElementById(messageId);
+                    let messageDiv = document.getElementById(messageId);
                     if (messageDiv) {
-                        const header = messageDiv.querySelector('.message-header');
+                        let header = messageDiv.querySelector('.message-header');
                         if (header && !header.querySelector('.speaker-indicator')) {
-                            const indicator = document.createElement('span');
+                            let indicator = document.createElement('span');
                             indicator.className = 'speaker-indicator active';
                             indicator.textContent = '🔊 מדבר';
                             header.appendChild(indicator);
@@ -456,9 +582,9 @@
                     
                     // Remove speaker indicator
                     if (messageId) {
-                        const messageDiv = document.getElementById(messageId);
+                        let messageDiv = document.getElementById(messageId);
                         if (messageDiv) {
-                            const indicator = messageDiv.querySelector('.speaker-indicator');
+                            let indicator = messageDiv.querySelector('.speaker-indicator');
                             if (indicator) {
                                 indicator.remove();
                             }
@@ -484,17 +610,30 @@
         }
         
         function stopSpeaking() {
+            // Stop Web Speech API
+            if (currentUtterance && synthesis) {
+                synthesis.cancel();
+                currentUtterance = null;
+                isSpeaking = false;
+                console.log('🔇 Web Speech API stopped');
+            } else if (currentUtterance && !synthesis) {
+                console.log('🔇 Web Speech API not available, clearing utterance');
+                currentUtterance = null;
+                isSpeaking = false;
+            }
+            
+            // Stop audio if playing
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio = null;
                 isSpeaking = false;
-                console.log('🔇 TTS stopped');
+                console.log('🔇 Audio stopped');
             }
         }
         
         function toggleTTS() {
             ttsEnabled = !ttsEnabled;
-            const btn = document.getElementById('ttsToggle');
+            let btn = document.getElementById('ttsToggle');
             
             if (ttsEnabled) {
                 btn.textContent = '🔊 קול מופעל';
@@ -512,7 +651,8 @@
             }
         }
         
-        function stopGeneration() {
+        // Make function globally accessible
+        window.stopGeneration = function() {
             console.log('🛑 Stopping generation...');
             
             if (currentAbortController) {
@@ -522,12 +662,16 @@
             
             isGenerating = false;
             
+            // Check if buttons exist
+            let sendBtn = document.getElementById('sendBtn');
+            let stopBtn = document.getElementById('stopBtn');
+            if (sendBtn && stopBtn) {
+                sendBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            }
+            
             // Stop TTS if speaking
             stopSpeaking();
-            
-            // Hide stop button, show send button
-            document.getElementById('stopBtn').classList.remove('active');
-            document.getElementById('sendBtn').style.display = 'block';
             
             // Stop VAD recording if active
             if (vadEnabled && isRecording) {
@@ -544,7 +688,7 @@
             }
             
             conversationHistory = [];
-            const chatContainer = document.getElementById('chatContainer');
+            let chatContainer = document.getElementById('chatContainer');
             chatContainer.innerHTML = `
                 <div class="welcome">
                     <h1>Zero Agent</h1>
@@ -553,11 +697,23 @@
             `;
         }
 
-        function handleKeyPress(event) {
+        // Make function globally accessible
+        window.handleKeyPress = function(event) {
+            console.log('🔵 Key pressed:', event.key);
+            
+            // Check if input exists
+            let input = document.getElementById('chatInput');
+            if (!input) {
+                console.error('🔴 Input element not found in handleKeyPress!');
+                return;
+            }
+            
             if (event.key === 'Enter' && !event.shiftKey) {
+                console.log('🔵 Enter pressed - calling sendMessage()');
                 event.preventDefault();
                 sendMessage();
             } else if (event.key === 'Escape' && isGenerating) {
+                console.log('🔵 Escape pressed - calling stopGeneration()');
                 event.preventDefault();
                 stopGeneration();
             }
@@ -574,9 +730,19 @@
         // STREAMING VERSION - Phase 1 Latency Improvement! ⚡
         // Phase 2: With Interrupt Handling! 🛑
         // ============================================================
-        async function sendMessage() {
-            const input = document.getElementById('chatInput');
+        // Make function globally accessible
+        window.sendMessage = async function() {
+            console.log('🔵 sendMessage() called!');
+            
+            // Check if input exists
+            let input = document.getElementById('chatInput');
+            if (!input) {
+                console.error('🔴 Input element not found!');
+                return;
+            }
+            
             let message = input.value.trim();
+            console.log('🔵 Message:', message);
             
             // Remove surrounding quotes if user typed them
             if (message.startsWith('"') && message.endsWith('"')) {
@@ -597,14 +763,21 @@
             
             // Show stop button, hide send button
             isGenerating = true;
-            document.getElementById('sendBtn').style.display = 'none';
-            document.getElementById('stopBtn').classList.add('active');
+            
+            let sendBtn = document.getElementById('sendBtn');
+            let stopBtn = document.getElementById('stopBtn');
+            if (sendBtn && stopBtn) {
+                sendBtn.style.display = 'none';
+                stopBtn.style.display = 'block';
+            } else {
+                console.error('🔴 Buttons not found!', {sendBtn, stopBtn});
+            }
             
             // Create new abort controller
             currentAbortController = new AbortController();
             
             // Remove welcome message
-            const welcome = document.querySelector('.welcome');
+            let welcome = document.querySelector('.welcome');
             if (welcome) welcome.remove();
 
             // Add user message
@@ -613,7 +786,7 @@
             // Add empty assistant message for streaming
             const messageId = `msg-${Date.now()}`;
             const container = document.getElementById('chatContainer');
-            const messageDiv = document.createElement('div');
+            let messageDiv = document.createElement('div');
             messageDiv.className = 'message assistant';
             messageDiv.id = messageId;
             messageDiv.innerHTML = `
@@ -663,7 +836,7 @@
                 
                 let fullResponse = '';
                 let isFirstChunk = true;
-                const contentDiv = messageDiv.querySelector('.message-content');
+                let contentDiv = messageDiv.querySelector('.message-content');
 
                 while (true) {
                     const {value, done} = await reader.read();
@@ -715,11 +888,19 @@
                 // Check if aborted
                 if (error.name === 'AbortError') {
                     console.log('🛑 Request aborted by user');
-                    const contentDiv = messageDiv.querySelector('.message-content');
+                    let contentDiv = messageDiv.querySelector('.message-content');
                     contentDiv.textContent = 'בקשה נעצרה';
                     isGenerating = false;
-                    document.getElementById('stopBtn').classList.remove('active');
-                    document.getElementById('sendBtn').style.display = 'block';
+                    
+                    let sendBtn = document.getElementById('sendBtn');
+                    let stopBtn = document.getElementById('stopBtn');
+                    if (sendBtn && stopBtn) {
+                        stopBtn.style.display = 'none';
+                        sendBtn.style.display = 'block';
+                    } else {
+                        console.error('🔴 Buttons not found in stop handling!', {sendBtn, stopBtn});
+                    }
+                    
                     return;
                 }
                 
@@ -757,7 +938,7 @@
                     }
                     
                     const data = await response.json();
-                    const contentDiv = messageDiv.querySelector('.message-content');
+                    let contentDiv = messageDiv.querySelector('.message-content');
                     const responseText = data.response || 'מצטער, לא הצלחתי לעבד את הבקשה';
                     contentDiv.textContent = responseText;
                     
@@ -775,17 +956,25 @@
                     // Check if aborted
                     if (fallbackError.name === 'AbortError') {
                         console.log('🛑 Fallback request also aborted');
-                        const contentDiv = messageDiv.querySelector('.message-content');
+                        let contentDiv = messageDiv.querySelector('.message-content');
                         contentDiv.textContent = 'בקשה נעצרה';
                     } else {
-                        const contentDiv = messageDiv.querySelector('.message-content');
+                        let contentDiv = messageDiv.querySelector('.message-content');
                         contentDiv.textContent = 'שגיאה בתקשורת עם השרת';
                     }
                 } finally {
                     // Always restore UI state
                     isGenerating = false;
-                    document.getElementById('stopBtn').classList.remove('active');
-                    document.getElementById('sendBtn').style.display = 'block';
+                    
+                    let sendBtn = document.getElementById('sendBtn');
+                    let stopBtn = document.getElementById('stopBtn');
+                    if (sendBtn && stopBtn) {
+                        stopBtn.style.display = 'none';
+                        sendBtn.style.display = 'block';
+                    } else {
+                        console.error('🔴 Buttons not found in final error handling!', {sendBtn, stopBtn});
+                    }
+                    
                     currentAbortController = null;
                 }
             }
@@ -795,7 +984,7 @@
             const container = document.getElementById('chatContainer');
             const messageId = `msg-${Date.now()}`;
             
-            const messageDiv = document.createElement('div');
+            let messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
             messageDiv.id = messageId;
             
@@ -826,9 +1015,15 @@
             this.style.height = Math.min(this.scrollHeight, 200) + 'px';
         });
 
-        // Voice Input Support
-        let recognition = null;
-        let isRecording = false;
+        // ============================================================
+        // Advanced Voice Input + VAD + Interrupt Handling 🎤
+        // ============================================================
+        // recognition, isRecording, vadEnabled already declared at top
+        let isInterrupted = false;
+        let interruptionTimeout = null;
+        let vadInterval = null;
+        let silenceTimeout = null;
+        let lastVoiceTime = 0;
 
         function initVoiceRecognition() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -865,8 +1060,57 @@
                 console.warn('Speech recognition not supported');
             }
         }
+        
+        // Voice Activity Detection (VAD) - Advanced
+        function startVAD() {
+            if (vadInterval) return;
+            
+            console.log('🎤 Starting Voice Activity Detection');
+            vadInterval = setInterval(() => {
+                if (isRecording && vadEnabled) {
+                    const timeSinceVoice = Date.now() - lastVoiceTime;
+                    
+                    // If no voice for 2 seconds, stop recording
+                    if (timeSinceVoice > 2000 && lastVoiceTime > 0) {
+                        console.log('🎤 VAD: Silence detected, stopping recording');
+                        stopRecording();
+                    }
+                }
+            }, 500);
+        }
+        
+        function stopVAD() {
+            if (vadInterval) {
+                clearInterval(vadInterval);
+                vadInterval = null;
+                console.log('🎤 VAD stopped');
+            }
+        }
+        
+        // Interrupt handling - stop TTS when user starts speaking
+        function handleInterrupt() {
+            if (isSpeaking && !isInterrupted) {
+                console.log('🛑 User interruption detected - stopping TTS');
+                isInterrupted = true;
+                
+                // Stop current speech immediately
+                if (currentUtterance) {
+                    synthesis.cancel();
+                }
+                
+                // Clear interruption flag after a delay
+                if (interruptionTimeout) {
+                    clearTimeout(interruptionTimeout);
+                }
+                interruptionTimeout = setTimeout(() => {
+                    isInterrupted = false;
+                    console.log('🛑 Interrupt flag cleared');
+                }, 1000);
+            }
+        }
 
-        function toggleVoiceInput() {
+        // Make function globally accessible
+        window.toggleVoiceInput = function() {
             if (!recognition) {
                 initVoiceRecognition();
             }
@@ -877,13 +1121,26 @@
                 startRecording();
             }
         }
+        
+        // Enhanced VAD Toggle - moved to later in file
 
         function startRecording() {
             if (recognition) {
+                // Handle interrupt if TTS is playing
+                handleInterrupt();
+                
                 isRecording = true;
+                lastVoiceTime = Date.now(); // Reset voice timer
                 document.getElementById('micBtn').classList.add('recording');
                 document.getElementById('chatInput').placeholder = 'מקשיב...';
                 recognition.start();
+                
+                // Start VAD if enabled
+                if (vadEnabled) {
+                    startVAD();
+                }
+                
+                console.log('🎤 Started recording' + (vadEnabled ? ' with VAD' : ''));
             }
         }
 
@@ -893,13 +1150,18 @@
                 document.getElementById('micBtn').classList.remove('recording');
                 document.getElementById('chatInput').placeholder = 'שאל אותי משהו...';
                 recognition.stop();
+                
+                // Stop VAD
+                stopVAD();
+                
+                console.log('🎤 Stopped recording');
             }
         }
 
         // ============================================================
         // Voice Activity Detection (VAD) - Phase 2 Enhanced! 🎤
         // ============================================================
-        let vadEnabled = false;
+        // vadEnabled already declared at top
         let vadAudioContext = null;
         let vadAnalyser = null;
         let vadCheckInterval = null;
@@ -915,9 +1177,10 @@
         
         let vadSpeechStartTime = null;
         
-        async function toggleVAD() {
+        // Make function globally accessible
+        window.toggleVAD = async function() {
             vadEnabled = !vadEnabled;
-            const vadBtn = document.getElementById('vadBtn');
+            let vadBtn = document.getElementById('vadBtn');
             const vadStatus = document.getElementById('vadStatus');
             
             if (vadEnabled) {
@@ -1008,7 +1271,7 @@
             const average = weightedSum / sum;
             const volumeDB = 20 * Math.log10(average / 255);
             
-            const vadBtn = document.getElementById('vadBtn');
+            let vadBtn = document.getElementById('vadBtn');
             
             // Check for speech
             if (volumeDB > VAD_SPEECH_THRESHOLD) {
