@@ -638,8 +638,7 @@
                 conversationHistory = conversationHistory.slice(-10);
             }
             
-            // Streaming temporarily disabled - use regular chat
-            // Will enable after fixing stream_generate method
+            // Streaming disabled - use regular chat
             try {
                 // Force fallback to regular chat for now
                 throw new Error('Streaming disabled - using regular chat');

@@ -13,24 +13,25 @@ class ModelRouter:
     Smart router that analyzes task and selects optimal model
     """
     
-    # Keywords for model selection
+    # Keywords for model selection (updated for mistral:latest)
     KEYWORDS = {
         "coder": [
             "write code", "write a function", "write a script", "debug this code",
             "fix this code", "refactor code", "optimize code", "code review",
             "implement", "create a class", "create a function", "כתוב קוד",
-            "בנה פונקציה", "תקן את הקוד"
+            "בנה פונקציה", "תקן את הקוד", "צור קוד", "פיתוח"
         ],
         "smart": [
             "analyze deeply", "explain in detail", "philosophy", "complex reasoning",
             "think step by step", "detailed analysis", "comprehensive", "evaluate",
             "compare thoroughly", "research", "deep dive", "critical thinking",
-            "elaborate", "nuanced", "sophisticated", "intricate"
+            "elaborate", "nuanced", "sophisticated", "intricate", "אסטרטגיה",
+            "ניתוח מעמיק", "חשיבה ביקורתית"
         ],
         "fast": [
             "quick", "simple", "what is", "מה זה", "calculate", "convert", "translate",
             "define", "summarize", "list", "count", "basic", "easy", "explain",
-            "?", "כמה", "איך", "למה", "מתי"
+            "?", "כמה", "איך", "למה", "מתי", "פתח", "צור", "בדוק"
         ]
     }
     

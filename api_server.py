@@ -268,9 +268,9 @@ class ZeroAgent:
         
         print("\n[API] Initializing Zero Agent...")
         
-        # Initialize LLM - use smart model (deepseek-r1:32b) for best Hebrew quality (96.1% Hebrew, 11s avg)
-        # Alternative: "fast" (qwen2.5:3b) for speed (90.6% Hebrew, 2.5s avg)
-        self.llm = StreamingMultiModelLLM(default_model="smart")
+        # Initialize LLM - use mistral:latest for best Hebrew quality and speed
+        # Alternative: "smart" (deepseek-r1:32b) for complex reasoning
+        self.llm = StreamingMultiModelLLM(default_model="fast")
         if not self.llm.test_connection(verbose=False):
             raise ConnectionError("Cannot connect to Ollama!")
         print("[API] OK LLM connected")
@@ -604,8 +604,8 @@ async def text_to_speech(text: str):
         import requests
         from fastapi.responses import Response
         
-        # Call TTS service (Hebrew TTS on port 5002)
-        tts_url = f"http://localhost:5002/tts?text={text}"
+        # Call TTS service (Hebrew TTS on port 9033)
+        tts_url = f"http://localhost:9033/tts?text={text}"
         response = requests.get(tts_url, timeout=10)
         
         if response.status_code == 200:
@@ -1913,7 +1913,13 @@ async def chat_stream(request: Request):
                 llm = zero.llm if hasattr(zero, 'llm') else StreamingMultiModelLLM()
                 
                 # Build prompt with context (Phase 2: Context-Aware!)
-                prompt_parts = ["אתה Zero Agent. ענה **תמיד ורק** בעברית תקנית, גם אם השאלה באנגלית או שפה אחרת."]
+                # Use enhanced system prompt for better responses
+                try:
+                    from enhanced_system_prompt import get_system_prompt
+                    prompt_parts = [get_system_prompt(detailed=True)]
+                except Exception as e:
+                    print(f"[API] Warning: Could not load enhanced_system_prompt: {e}")
+                    prompt_parts = ["אתה Zero Agent. ענה **תמיד ורק** בעברית תקנית, גם אם השאלה באנגלית או שפה אחרת."]
                 
                 # Add conversation history if available
                 if conversation_history:

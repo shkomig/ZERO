@@ -14,20 +14,23 @@ class ContextAwareRouter:
     Understands when a task needs deep reasoning vs pure coding
     """
     
-    # Keywords for initial categorization
+    # Keywords for initial categorization (updated for mistral:latest)
     KEYWORDS = {
         "coder": [
             "code", "python", "javascript", "function", "class", "debug",
-            "syntax", "compile", "import", "variable", "script"
+            "syntax", "compile", "import", "variable", "script", "כתוב",
+            "קוד", "פונקציה", "תכנות", "פיתוח"
         ],
         "smart": [
             "analyze", "strategy", "philosophy", "complex", "reasoning",
             "think step by step", "evaluate", "compare", "research",
-            "comprehensive", "critical thinking", "implications"
+            "comprehensive", "critical thinking", "implications", "אסטרטגיה",
+            "ניתוח", "חשיבה", "מחקר"
         ],
         "fast": [
             "quick", "simple", "what is", "calculate", "convert",
-            "define", "summarize briefly", "list", "count"
+            "define", "summarize briefly", "list", "count", "מה זה",
+            "איך", "כמה", "פתח", "צור"
         ]
     }
     

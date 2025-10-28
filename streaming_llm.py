@@ -6,6 +6,7 @@ Makes everything feel 3x faster!
 """
 
 import requests
+import json
 from typing import Dict, Any, List, Optional, Generator, Callable
 import time
 import sys
@@ -17,14 +18,14 @@ class StreamingMultiModelLLM:
     Displays responses in real-time as they're generated
     """
     
-    # Model configurations (updated with fast qwen2.5:3b!)
+    # Model configurations (updated with mistral:latest for Hebrew!)
     MODELS = {
         "fast": {
-            "name": "qwen2.5:3b",
+            "name": "mistral:latest",
             "description": "Ultra-fast chat model, excellent Hebrew support",
-            "size": "1.9GB",
+            "size": "4.4GB",
             "speed": "⚡⚡⚡⚡⚡",
-            "quality": "⭐⭐⭐⭐"
+            "quality": "⭐⭐⭐⭐⭐"
         },
         "coder": {
             "name": "qwen2.5-coder:32b",
@@ -211,12 +212,14 @@ class StreamingMultiModelLLM:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "num_predict": 3072,  # Higher limit for detailed responses (was 2048)
-                    "num_ctx": 16384,  # Larger context window (was 8192)
-                    "temperature": 0.78,  # Slightly higher for richer responses (was 0.75)
-                    "top_p": 0.93,  # More diverse sampling (was 0.92)
-                    "top_k": 50,  # Top-K sampling for quality control
-                    "repeat_penalty": 1.03,  # Lower penalty - let model elaborate (was 1.05)
+                    "num_predict": 4096,  # Higher limit for detailed responses
+                    "num_ctx": 16384,  # Larger context window for better context understanding
+                    "temperature": 0.7,  # Optimal for balanced creativity and accuracy (Mistral best practice)
+                    "top_p": 0.9,  # Nucleus sampling - standard for quality (don't mix with temperature changes)
+                    "top_k": 40,  # Reduced for more focused responses (Mistral recommendation)
+                    "repeat_penalty": 1.1,  # Standard penalty to avoid repetition
+                    "frequency_penalty": 0.1,  # Additional penalty for repetitive tokens
+                    "presence_penalty": 0.1,  # Encourage diverse vocabulary
                     "stop": ["\n\n\n\n", "**999.**"]  # Stop at extreme boundaries only
                 }
             }
@@ -240,6 +243,48 @@ class StreamingMultiModelLLM:
             
         except Exception as e:
             return f"Error: {str(e)}"
+    
+    def stream_generate(self, prompt: str, model: Optional[str] = None, max_tokens: int = 4096):
+        """
+        Stream generate text word by word
+        """
+        model_name = self.MODELS.get(model or self.default_model, {}).get("name", "mistral:latest")
+        
+        try:
+            url = f"{self.base_url}/api/generate"
+            payload = {
+                "model": model_name,
+                "prompt": prompt,
+                "stream": True,
+                "options": {
+                    "num_predict": max_tokens,
+                    "num_ctx": 16384,  # Larger context window for better understanding
+                    "temperature": 0.7,  # Optimal for balanced creativity and accuracy (Mistral best practice)
+                    "top_p": 0.9,  # Nucleus sampling - standard for quality
+                    "top_k": 40,  # Reduced for more focused responses (Mistral recommendation)
+                    "repeat_penalty": 1.1,  # Standard penalty to avoid repetition
+                    "frequency_penalty": 0.1,  # Additional penalty for repetitive tokens
+                    "presence_penalty": 0.1,  # Encourage diverse vocabulary
+                    "stop": ["\n\n\n\n", "**999.**"]
+                }
+            }
+            
+            response = requests.post(url, json=payload, stream=True, timeout=180)
+            response.raise_for_status()
+            
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        data = json.loads(line.decode('utf-8'))
+                        if 'response' in data:
+                            yield data['response']
+                        if data.get('done', False):
+                            break
+                    except json.JSONDecodeError:
+                        continue
+                        
+        except Exception as e:
+            yield f"Error: {str(e)}"
     
     # Keep all other methods from MultiModelLLM
     def chat(self, messages: List[Dict[str, str]], model: Optional[str] = None, 

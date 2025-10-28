@@ -1,16 +1,19 @@
 # 🤖 Zero Agent
 
-**AI-Powered Autonomous Agent System**
+**AI-Powered Autonomous Agent System with Hebrew Support**
 
-Zero Agent is an advanced autonomous AI agent that executes complex tasks on your computer through natural language commands. It combines multiple AI models, intelligent routing, and powerful automation tools.
+Zero Agent is an advanced autonomous AI agent that executes complex tasks on your computer through natural language commands. It combines multiple AI models, intelligent routing, and powerful automation tools with **excellent Hebrew language support**.
 
 ## ✨ Features
 
-- **🧠 Multi-Model Intelligence**: Automatically routes tasks to the best AI model (Claude, DeepSeek, Llama, Qwen)
+- **🧠 Multi-Model Intelligence**: Automatically routes tasks to the best AI model (Mistral, DeepSeek, Llama, Qwen)
+- **🇮🇱 Hebrew Support**: Native Hebrew language support with excellent quality
 - **🔧 Powerful Tools**: Git operations, system monitoring, web automation, screen capture
-- **💾 RAG Memory**: Learns from past successes and failures
+- **💾 RAG Memory**: Learns from past successes and failures (224+ conversations stored)
 - **🎯 Smart Orchestration**: LangGraph-powered task planning and execution
 - **⚡ Local-First**: Most operations use local models (Ollama)
+- **🖥️ Computer Control**: Full computer control including app launching and clicking
+- **📊 Web Search**: Real-time web search with stock prices and current data
 
 ## 🚀 Quick Start
 
@@ -18,9 +21,10 @@ Zero Agent is an advanced autonomous AI agent that executes complex tasks on you
 
 - Python 3.10+
 - [Ollama](https://ollama.ai/) installed with models:
-  - `ollama pull deepseek-r1:32b`
-  - `ollama pull llama3.1:8b`
-  - `ollama pull qwen2.5-coder:32b`
+  - `ollama pull mistral:latest` (Default - 4.4GB)
+  - `ollama pull deepseek-r1:32b` (19GB - for complex reasoning)
+  - `ollama pull llama3.1:8b` (4.9GB - fast responses)
+  - `ollama pull qwen2.5-coder:32b` (19GB - for coding tasks)
 - (Optional) Anthropic API key for Claude
 
 ### Installation
@@ -67,7 +71,12 @@ cp env.example .env      # Linux/Mac
 ```bash
 python api_server.py
 ```
-Then open `http://localhost:8080/zero_web_interface.html` in your browser.
+Then open `http://localhost:8080/zero_chat_simple.html` in your browser.
+
+**Available Interfaces:**
+- `zero_chat_simple.html` - Simple chat interface (Recommended)
+- `zero_web_interface.html` - Advanced web interface
+- `zero_ui.html` - Basic UI
 
 **Option 2: CLI Mode**
 ```bash
@@ -94,12 +103,13 @@ zero create a git repo called my-project
 zero check git status
 ```
 
-### Hebrew Support
+### Hebrew Support (Native)
 
 ```
-זירו תחפש באינטרנט מדריכי Python
-זירו תצלם את המסך
-זירו תבדוק את השימוש בזיכרון
+מה זה פיתון?
+צור לי קוד פיתון למשחק טטריס
+תן לי ניתוח על מניית QQQ כולל המלצת קניה
+בדוק את המערכת
 ```
 
 ### Complex Tasks
@@ -112,16 +122,19 @@ zero take a screenshot and analyze what's on screen
 
 ## 🛠️ Available Tools
 
-| Tool | Description |
-|------|-------------|
-| **WebSearch** | Enhanced search with stock prices (Yahoo Finance + DuckDuckGo) |
-| **Code Executor** | Execute Python/bash code, create files and folders |
-| **Gmail** | Send and read emails |
-| **Calendar** | Manage Google Calendar events |
-| **Database** | SQLite database operations |
-| **Git Operations** | Git init, clone, commit, push, status |
-| **System Monitor** | CPU, memory, disk, processes |
-| **Browser** | Automated web navigation |
+| Tool | Description | Status |
+|------|-------------|--------|
+| **WebSearch** | Enhanced search with stock prices (Yahoo Finance + DuckDuckGo) | ✅ Active |
+| **Code Executor** | Execute Python/bash code, create files and folders | ✅ Active |
+| **Computer Control** | Launch apps, click, keyboard input | ✅ Active |
+| **Screen Capture** | Take screenshots and analyze | ✅ Active |
+| **Memory System** | RAG-based memory with 224+ conversations | ✅ Active |
+| **Gmail** | Send and read emails | ⚠️ Config Required |
+| **Calendar** | Manage Google Calendar events | ⚠️ Config Required |
+| **Database** | SQLite database operations | ✅ Active |
+| **Git Operations** | Git init, clone, commit, push, status | ✅ Active |
+| **System Monitor** | CPU, memory, disk, processes | ✅ Active |
+| **Browser** | Automated web navigation | ✅ Active |
 
 ## 📊 Architecture
 
@@ -133,17 +146,23 @@ Zero Agent
 │   ├── Tool Executor
 │   └── Config Manager
 ├── Models
-│   ├── Local Models (Ollama)
-│   └── Cloud Models (Claude)
+│   ├── Mistral:latest (Default - Hebrew optimized)
+│   ├── DeepSeek-r1:32b (Complex reasoning)
+│   ├── Llama3.1:8b (Fast responses)
+│   └── Qwen2.5-coder:32b (Coding tasks)
 ├── Tools
-│   ├── Git Operations
-│   ├── Browser Automation
+│   ├── Computer Control
 │   ├── Screen Capture
+│   ├── Web Search
+│   ├── Git Operations
 │   └── System Monitor
-├── RAG
-│   ├── Memory System (ChromaDB)
+├── Memory
+│   ├── Short-term Memory (224+ conversations)
+│   ├── RAG System (ChromaDB)
 │   └── Context Retrieval
 └── UI
+    ├── Web Interface (zero_chat_simple.html)
+    ├── Advanced UI (zero_web_interface.html)
     └── CLI Interface
 ```
 
@@ -156,7 +175,7 @@ Edit `env.example` (then rename to `.env`):
 ANTHROPIC_API_KEY=your_key_here
 
 # Models
-DEFAULT_MODEL=deepseek-r1:32b
+DEFAULT_MODEL=mistral:latest
 FALLBACK_MODEL=llama3.1:8b
 
 # Features
