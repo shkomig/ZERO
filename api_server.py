@@ -288,12 +288,21 @@ class ZeroAgent:
                 self.memory = MemoryManager(
                     memory_dir=Path("workspace/memory"),
                     rag_url="http://localhost:8000",
-                    enable_rag=True
+                    enable_rag=False  # We'll use embedded RAG instead
                 )
                 print("[API] OK Memory ready")
             except Exception as e:
                 print(f"[API] WARNING Memory unavailable: {e}")
                 self.memory = None
+        
+        # Initialize RAG System (Embedded ChromaDB - Phase 3)
+        try:
+            from zero_agent.rag.memory import RAGMemorySystem
+            self.rag = RAGMemorySystem()
+            print("[API] OK RAG System ready (Embedded ChromaDB)")
+        except Exception as e:
+            print(f"[API] WARNING RAG unavailable: {e}")
+            self.rag = None
         
         # Initialize Code Executor
         if CODE_EXECUTOR_AVAILABLE:
@@ -845,7 +854,7 @@ async def chat(request: ChatRequest, http_request: Request):
                 except Exception as e:
                     action_result = f"❌ Error: {str(e)}"
         
-        # Build context from conversation history (NEW!)
+        # Build context from conversation history (Phase 2)
         context = ""
         if request.conversation_history:
             # Format last 10 messages for context
@@ -867,6 +876,28 @@ async def chat(request: ChatRequest, http_request: Request):
                 max_length=2000
             )
             print(f"[Context] Using old memory system: {len(context)} chars")
+        
+        # Add RAG context for complex questions (Phase 3)
+        rag_context = ""
+        if zero.rag and request.use_memory:
+            # Determine if question needs long-term memory
+            complex_keywords = ['זוכר', 'אמרתי', 'דיברנו', 'לפני', 'אתמול', 'שבוע',
+                              'remember', 'said', 'talked', 'before', 'yesterday', 'ago',
+                              'מה אתה יודע', 'מה למדנו', 'what do you know']
+            
+            needs_rag = any(kw in request.message.lower() for kw in complex_keywords)
+            
+            if needs_rag:
+                try:
+                    rag_results = zero.rag.retrieve(request.message, n_results=3)
+                    if rag_results:
+                        rag_context = "\n\n## זיכרון ארוך טווח:\n"
+                        for i, result in enumerate(rag_results[:2], 1):  # Top 2 only
+                            doc = result.get('document', '')[:150]  # First 150 chars
+                            rag_context += f"{i}. {doc}...\n"
+                        print(f"[RAG] Added {len(rag_results)} results to context")
+                except Exception as rag_err:
+                    print(f"[RAG] Failed to retrieve: {rag_err}")
         
         # Always use enhanced system prompts for HIGH-QUALITY responses
         preferences = ""
@@ -918,6 +949,10 @@ A: Python היא שפת תכנות רב-תכליתית, קלה ללמידה וש
         # 2. Context (conversation history) - if exists
         if context and request.use_memory:
             prompt += f"## הקשר מהשיחה הקודמת:\n{context}\n\n"
+        
+        # 2.5 RAG long-term memory context (Phase 3)
+        if rag_context:
+            prompt += rag_context + "\n"
         
         # 3. Additional info (search results, actions)
         extra_info = ""
@@ -983,13 +1018,24 @@ A: Python היא שפת תכנות רב-תכליתית, קלה ללמידה וש
             else:
                 response = zero.llm.generate(prompt, model=model)
         
-        # Remember conversation
+        # Remember conversation (Phase 3)
         if zero.memory:
             zero.memory.remember(
                 user_message=request.message,
                 assistant_message=response,
                 model_used=model
             )
+        
+        # Store in RAG for long-term memory (Phase 3)
+        if zero.rag:
+            try:
+                zero.rag.store_conversation(
+                    task=request.message,
+                    response=response,
+                    metadata={"model": model, "timestamp": time.time()}
+                )
+            except Exception as rag_err:
+                print(f"[RAG] Failed to store: {rag_err}")
         
         duration = time.time() - start_time
         
@@ -1745,6 +1791,31 @@ async def chat_stream(request: Request):
                 yield f"data: {json.dumps({'chunk': '', 'full': full_response, 'done': True})}\n\n"
                 
                 logger.info(f"[STREAM] Completed: {chunk_count} chunks sent")
+                
+                # Save to memory (Phase 3: Memory System)
+                if zero.memory and full_response:
+                    try:
+                        zero.memory.remember(
+                            user_message=message,
+                            assistant_message=full_response,
+                            model_used="fast"  # Streaming typically uses fast model
+                        )
+                        logger.info(f"[STREAM] Saved to memory")
+                    except Exception as mem_err:
+                        logger.warning(f"[STREAM] Failed to save to memory: {mem_err}")
+                
+                # Save to RAG for long-term memory (Phase 3)
+                if zero.rag and full_response:
+                    try:
+                        import time as time_module
+                        zero.rag.store_conversation(
+                            task=message,
+                            response=full_response,
+                            metadata={"model": "fast", "timestamp": time_module.time()}
+                        )
+                        logger.info(f"[STREAM] Saved to RAG")
+                    except Exception as rag_err:
+                        logger.warning(f"[STREAM] Failed to save to RAG: {rag_err}")
                 
             except Exception as e:
                 logger.error(f"[STREAM] Error during generation: {e}")
