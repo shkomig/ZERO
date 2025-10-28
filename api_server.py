@@ -23,7 +23,7 @@ Install:
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import asyncio
@@ -268,7 +268,8 @@ class ZeroAgent:
         
         print("\n[API] Initializing Zero Agent...")
         
-        # Initialize LLM - use smart model for better instruction following
+        # Initialize LLM - use smart model (deepseek-r1:32b) for best Hebrew quality (96.1% Hebrew, 11s avg)
+        # Alternative: "fast" (qwen2.5:3b) for speed (90.6% Hebrew, 2.5s avg)
         self.llm = StreamingMultiModelLLM(default_model="smart")
         if not self.llm.test_connection(verbose=False):
             raise ConnectionError("Cannot connect to Ollama!")
@@ -1033,35 +1034,39 @@ async def chat(request: ChatRequest, http_request: Request):
         except Exception as e:
             print(f"[API] Warning: Could not load enhanced_system_prompt: {e}")
             # Fallback to simple, clean prompt
-            preferences = """You are Zero Agent, an AI assistant with memory. Answer in Hebrew clearly and concisely.
+            preferences = """אתה Zero Agent, עוזר AI חכם עם זיכרון. ענה תמיד ורק בעברית תקנית.
 
-Rules:
-1. Short, direct answers for simple questions
-2. Detailed answers for complex questions  
-3. No unnecessary introductions
-4. No emojis or symbols
-5. Clean formatting
+חוקים קריטיים:
+1. תשובות קצרות ישירות לשאלות פשוטות
+2. תשובות מפורטות לשאלות מורכבות
+3. ללא הקדמות מיותרות
+4. ללא אימוג'י או סמלים
+5. עיצוב נקי ומסודר
+6. **חובה לענות בעברית בלבד - אסור להשתמש באנגלית, סינית, או שפה אחרת**
 
-Memory Guidelines (Phase 3):
-- When user shares personal info, acknowledge it: "רשמתי! אני זוכר ש..."
-- When asked about past conversations, use your memory
-- Be proactive with relevant memories
+הנחיות זיכרון (Phase 3):
+- כשהמשתמש משתף מידע אישי, אשר: "רשמתי! אני זוכר ש..."
+- כשנשאלת על שיחות קודמות, השתמש בזיכרון שלך
+- היה פרואקטיבי עם זכרונות רלוונטיים
 
-Examples:
-Q: 5+5
-A: 10
+דוגמאות:
+שאלה: 5+5
+תשובה: 10
 
-Q: כמה זה 6+5
-A: 11
+שאלה: כמה זה 6+5
+תשובה: 11
 
-Q: מה זה Python?
-A: Python היא שפת תכנות רב-תכליתית, קלה ללמידה ושימושית לפיתוח אפליקציות, ניתוח נתונים ואוטומציה.
+שאלה: מה זה Python?
+תשובה: Python היא שפת תכנות רב-תכליתית, קלה ללמידה ושימושית לפיתוח אפליקציות, ניתוח נתונים ואוטומציה.
 
-Q: אני אוהב קפה
-A: רשמתי! אני זוכר שאתה אוהב קפה.
+שאלה: אני אוהב קפה
+תשובה: רשמתי! אני זוכר שאתה אוהב קפה.
 
-Q: מה אני אוהב?
-A: אתה אוהב קפה - אמרת לי את זה קודם."""
+שאלה: מה אני אוהב?
+תשובה: אתה אוהב קפה - אמרת לי את זה קודם.
+
+שאלה: מה זה בינה מלאכותית?
+תשובה: בינה מלאכותית היא תחום במדעי המחשב העוסק בפיתוח מערכות המסוגלות לבצע משימות הדורשות אינטליגנציה אנושית, כמו למידה, הבנת שפה וקבלת החלטות."""
         
         # Build prompt with modular architecture (from llm-concise-guide.md)
         # Structure: Role + Constraints + Format + Task (for better instruction following)
@@ -1092,6 +1097,11 @@ A: אתה אוהב קפה - אמרת לי את זה קודם."""
             print(f"[Prompt] Total extra_info added: {len(extra_info)} chars")
         
         # 4. User message - clear and direct
+        # Important: Add language enforcement for questions in other languages
+        user_message = request.message
+        if any(ord(c) < 128 for c in user_message if c.isalpha()):  # Has Latin chars
+            prompt += f"\n**הערה חשובה: השאלה באנגלית/שפה אחרת, אבל חובה לענות בעברית בלבד!**\n\n"
+        
         prompt += f"ש: {request.message}\nת: "
         
         # DEBUG: Print first and last 500 chars of prompt
@@ -1903,7 +1913,7 @@ async def chat_stream(request: Request):
                 llm = zero.llm if hasattr(zero, 'llm') else StreamingMultiModelLLM()
                 
                 # Build prompt with context (Phase 2: Context-Aware!)
-                prompt_parts = ["אתה Zero Agent. ענה בעברית בקצרה וברור."]
+                prompt_parts = ["אתה Zero Agent. ענה **תמיד ורק** בעברית תקנית, גם אם השאלה באנגלית או שפה אחרת."]
                 
                 # Add conversation history if available
                 if conversation_history:
@@ -1912,6 +1922,10 @@ async def chat_stream(request: Request):
                         role = "ש" if msg.get("role") == "user" else "ת"
                         content = msg.get("content", "")
                         prompt_parts.append(f"{role}: {content}")
+                
+                # Add language enforcement if question is in English
+                if any(ord(c) < 128 for c in message if c.isalpha()):
+                    prompt_parts.append("\n**חשוב: השאלה באנגלית, אבל חובה לענות בעברית!**")
                 
                 # Add current question
                 prompt_parts.append(f"ש: {message}")
