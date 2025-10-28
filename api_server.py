@@ -304,6 +304,17 @@ class ZeroAgent:
             print(f"[API] WARNING RAG unavailable: {e}")
             self.rag = None
         
+        # Initialize Learning System (Phase 3: Behavior Learning)
+        try:
+            from zero_agent.tools.behavior_learner import BehaviorLearner, UserAction
+            from datetime import datetime
+            self.learner = BehaviorLearner(memory_system=self.memory)
+            self.UserAction = UserAction  # Store class for easy access
+            print("[API] OK Behavior Learner ready")
+        except Exception as e:
+            print(f"[API] WARNING Learner unavailable: {e}")
+            self.learner = None
+        
         # Initialize Code Executor
         if CODE_EXECUTOR_AVAILABLE:
             try:
@@ -509,6 +520,76 @@ async def serve_simple():
     if html_path.exists():
         return FileResponse(html_path)
     raise HTTPException(status_code=404, detail="Simple interface not found")
+
+
+@app.get("/memory-dashboard", response_class=HTMLResponse)
+async def memory_dashboard():
+    """
+    Memory Dashboard - Phase 3: Step 5.2
+    Shows memory statistics, recent conversations, and preferences
+    """
+    if not zero.memory:
+        return "<h1>Memory not initialized</h1>"
+    
+    try:
+        stats = zero.memory.short_term.get_statistics()
+        prefs = zero.memory.short_term.get_all_preferences()
+        recent = zero.memory.short_term.get_recent_conversations(hours=24, limit=10)
+        
+        html = f"""
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+            <meta charset="UTF-8">
+            <title>Zero Memory Dashboard</title>
+            <style>
+                body {{ font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; margin: 0; }}
+                .container {{ max-width: 1200px; margin: 0 auto; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }}
+                h1 {{ color: #667eea; margin-top: 0; }}
+                h2 {{ color: #764ba2; border-bottom: 2px solid #667eea; padding-bottom: 10px; }}
+                .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }}
+                .stat-card {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; }}
+                .stat-number {{ font-size: 36px; font-weight: bold; }}
+                .stat-label {{ font-size: 14px; opacity: 0.9; }}
+                .pref-item, .conv-item {{ background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #667eea; }}
+                .nav-link {{ display: inline-block; margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Zero Memory Dashboard</h1>
+                <h2>Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-number">{stats['total_conversations']}</div><div class="stat-label">Total Conversations</div></div>
+                    <div class="stat-card"><div class="stat-number">{stats['conversations_24h']}</div><div class="stat-label">Today</div></div>
+                    <div class="stat-card"><div class="stat-number">{stats['total_preferences']}</div><div class="stat-label">Preferences</div></div>
+                    <div class="stat-card"><div class="stat-number">{stats['total_facts']}</div><div class="stat-label">Facts</div></div>
+                </div>
+                <h2>Preferences</h2>
+        """
+        
+        if prefs:
+            for key, val in prefs.items():
+                html += f'<div class="pref-item"><strong>{key}:</strong> {val}</div>'
+        else:
+            html += '<div class="pref-item">No preferences saved</div>'
+        
+        html += '<h2>Recent Conversations</h2>'
+        
+        if recent:
+            for conv in recent[:5]:
+                user_msg = str(conv['user_message'])[:80]
+                asst_msg = str(conv['assistant_message'])[:80]
+                html += f'<div class="conv-item"><strong>User:</strong> {user_msg}...<br><strong>Zero:</strong> {asst_msg}...</div>'
+        else:
+            html += '<div class="conv-item">No recent conversations</div>'
+        
+        html += '<a href="/simple" class="nav-link">Back to Chat</a></div></body></html>'
+        
+        return html
+        
+    except Exception as e:
+        return f"<h1>Error</h1><p>{str(e)}</p>"
 
 
 @app.get("/api/tts")
@@ -877,6 +958,39 @@ async def chat(request: ChatRequest, http_request: Request):
             )
             print(f"[Context] Using old memory system: {len(context)} chars")
         
+        # Check for Memory Commands (Phase 3: Step 4.2)
+        memory_command_keywords = [
+            'מה אתה זוכר', 'מה אתה יודע עליי', 'מה למדת', 'מה יודע',
+            'what do you remember', 'what do you know about me',
+            'שכח', 'תשכח', 'forget',
+            'רשום', 'זכור', 'תזכור', 'remember this', 'save this'
+        ]
+        
+        is_memory_command = any(kw in request.message.lower() for kw in memory_command_keywords)
+        
+        if is_memory_command and zero.memory:
+            # Handle memory commands directly
+            if any(kw in request.message.lower() for kw in ['מה אתה זוכר', 'מה אתה יודע', 'מה למדת', 'what do you remember', 'what do you know']):
+                # Show what Zero knows
+                prefs = zero.memory.short_term.get_all_preferences()
+                stats = zero.memory.short_term.get_statistics()
+                
+                response = "אני זוכר:\n\n"
+                if prefs:
+                    response += "העדפות שלך:\n"
+                    for key, val in prefs.items():
+                        response += f"  • {key}: {val}\n"
+                    response += "\n"
+                
+                response += f"דיברנו ביחד {stats['conversations_24h']} פעמים היום\n"
+                response += f"סה\"כ {stats['total_conversations']} שיחות בזיכרון\n"
+                
+                return ChatResponse(
+                    response=response,
+                    model_used="memory_command",
+                    duration=time.time() - start_time
+                )
+        
         # Add RAG context for complex questions (Phase 3)
         rag_context = ""
         if zero.rag and request.use_memory:
@@ -919,7 +1033,7 @@ async def chat(request: ChatRequest, http_request: Request):
         except Exception as e:
             print(f"[API] Warning: Could not load enhanced_system_prompt: {e}")
             # Fallback to simple, clean prompt
-            preferences = """You are Zero Agent, an AI assistant. Answer in Hebrew clearly and concisely.
+            preferences = """You are Zero Agent, an AI assistant with memory. Answer in Hebrew clearly and concisely.
 
 Rules:
 1. Short, direct answers for simple questions
@@ -927,6 +1041,11 @@ Rules:
 3. No unnecessary introductions
 4. No emojis or symbols
 5. Clean formatting
+
+Memory Guidelines (Phase 3):
+- When user shares personal info, acknowledge it: "רשמתי! אני זוכר ש..."
+- When asked about past conversations, use your memory
+- Be proactive with relevant memories
 
 Examples:
 Q: 5+5
@@ -936,7 +1055,13 @@ Q: כמה זה 6+5
 A: 11
 
 Q: מה זה Python?
-A: Python היא שפת תכנות רב-תכליתית, קלה ללמידה ושימושית לפיתוח אפליקציות, ניתוח נתונים ואוטומציה."""
+A: Python היא שפת תכנות רב-תכליתית, קלה ללמידה ושימושית לפיתוח אפליקציות, ניתוח נתונים ואוטומציה.
+
+Q: אני אוהב קפה
+A: רשמתי! אני זוכר שאתה אוהב קפה.
+
+Q: מה אני אוהב?
+A: אתה אוהב קפה - אמרת לי את זה קודם."""
         
         # Build prompt with modular architecture (from llm-concise-guide.md)
         # Structure: Role + Constraints + Format + Task (for better instruction following)
@@ -1038,6 +1163,23 @@ A: Python היא שפת תכנות רב-תכליתית, קלה ללמידה וש
                 print(f"[RAG] Failed to store: {rag_err}")
         
         duration = time.time() - start_time
+        
+        # Learn from this interaction (Phase 3: Learning System)
+        if zero.learner:
+            try:
+                from datetime import datetime
+                action = zero.UserAction(
+                    timestamp=datetime.now(),
+                    action_type="chat",
+                    target="llm_response",
+                    parameters={"model": model, "message_length": len(request.message)},
+                    success=True,  # Assume success if we got here
+                    context={"response_length": len(response)},
+                    duration=duration
+                )
+                zero.learner.learn_from_action(action)
+            except Exception as learn_err:
+                print(f"[LEARN] Failed to learn: {learn_err}")
         
         return ChatResponse(
             response=response,
