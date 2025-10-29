@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zero Agent</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -889,24 +890,33 @@
                 recognition.continuous = true;  // ✓ FIX: Allow longer recording
                 recognition.interimResults = true;  // ✓ FIX: Show interim results
 
-                recognition.onresult = (event) => {
-                    // Get all final + interim results
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-                    
-                    for (let i = 0; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript + ' ';
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-                    
-                    // Show interim results in real-time
-                    document.getElementById('chatInput').value = finalTranscript + interimTranscript;
-                    console.log('🎤 Transcript:', finalTranscript + interimTranscript);
-                };
+        recognition.onresult = (event) => {
+            // Get all final + interim results
+            let finalTranscript = '';
+            let interimTranscript = '';
+            
+            for (let i = 0; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            // Show interim results in real-time
+            const fullTranscript = finalTranscript + interimTranscript;
+            document.getElementById('chatInput').value = fullTranscript;
+            console.log('🎤 Transcript:', fullTranscript);
+            
+            // Auto-send when we have a complete sentence (ends with period, question mark, or exclamation)
+            if (finalTranscript.trim() && /[.!?]$/.test(finalTranscript.trim())) {
+                console.log('🎤 Auto-sending complete sentence');
+                setTimeout(() => {
+                    sendMessage();
+                }, 500); // Small delay to ensure transcription is complete
+            }
+        };
 
                 recognition.onerror = (event) => {
                     console.error('Speech recognition error:', event.error);
