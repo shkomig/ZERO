@@ -26,11 +26,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
+from contextlib import asynccontextmanager
 import asyncio
 from pathlib import Path
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
+import json
+import os
+import re
+import time
+import uuid
 
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -225,13 +231,58 @@ class ToolResponse(BaseModel):
 
 
 # ============================================================================
-# FastAPI App
+# FastAPI App with Lifespan
 # ============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan context manager for startup and shutdown events.
+    Replaces deprecated @app.on_event("startup") and @app.on_event("shutdown")
+    """
+    # Startup
+    try:
+        zero.initialize()
+        # Initialize Computer Control Agent
+        if COMPUTER_CONTROL_AVAILABLE:
+            initialize_computer_control()
+            print("[API] Computer Control Agent initialized")
+        
+        # Preload LLM Model (eliminate cold start!)
+        print("[API] Preloading LLM model...")
+        try:
+            import requests
+            # Warm up the model with a simple request
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "qwen2.5:3b",
+                    "prompt": "test",
+                    "stream": False
+                },
+                timeout=30
+            )
+            if response.status_code == 200:
+                print("[API] OK LLM model preloaded successfully! (No more cold start)")
+            else:
+                print(f"[API] WARNING LLM preload responded with code {response.status_code}")
+        except Exception as preload_error:
+            print(f"[API] WARNING LLM preload failed (will load on first request): {preload_error}")
+        
+    except Exception as e:
+        print(f"[API] ERROR Initialization failed: {e}")
+        raise
+    
+    yield
+    
+    # Shutdown
+    print("\n[API] Shutting down...")
 
 app = FastAPI(
     title="Zero Agent API",
     description="AI Agent with Memory, Tools, and Multi-Model Support",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS middleware
@@ -268,9 +319,9 @@ class ZeroAgent:
         
         print("\n[API] Initializing Zero Agent...")
         
-        # Initialize LLM - use mistral:latest for best Hebrew quality and speed
-        # Alternative: "smart" (deepseek-r1:32b) for complex reasoning
-        self.llm = StreamingMultiModelLLM(default_model="fast")
+        # Initialize LLM - use Mixtral 8x7B for best performance and Hebrew quality
+        # Alternative: "fast" (mistral:latest) for speed, "smart" (deepseek-r1:32b) for complex reasoning
+        self.llm = StreamingMultiModelLLM(default_model="expert")
         if not self.llm.test_connection(verbose=False):
             raise ConnectionError("Cannot connect to Ollama!")
         print("[API] OK LLM connected")
@@ -360,6 +411,57 @@ class ZeroAgent:
 # Global agent instance
 zero = ZeroAgent()
 
+# Regular expressions for Hebrew enforcement
+LATIN_PATTERN = re.compile(r"[A-Za-z]")
+CODE_BLOCK_PATTERN = re.compile(r"```")
+
+
+def enforce_hebrew_output(text: str, model: str) -> str:
+    """Ensure final text is fully Hebrew (unless code blocks are present)."""
+    if not text:
+        return text
+    if CODE_BLOCK_PATTERN.search(text):
+        return text
+    if not LATIN_PATTERN.search(text):
+        return text
+    print("[API] Enforcing Hebrew output (detected Latin characters)")
+
+    def _rewrite(source: str, strict: bool) -> str:
+        instruction = (
+            "כתוב מחדש בעברית תקנית בלבד, ללא אותיות לטיניות וללא מילים באנגלית. "
+            "שמור על המשמעות, על המבנה ועל כל המספרים המקוריים."
+        )
+        if strict:
+            instruction += " אם מופיעה מילה זרה – החלף אותה במילה עברית שוות-ערך או בתעתיק עברי."
+        rewrite_prompt = (
+            f"{instruction}\n\n"
+            "טקסט לתיקון:\n\"\"\"\n"
+            f"{source}\n"
+            "\"\"\"\n\n"
+            "תשובה מתוקנת בעברית:\n"
+        )
+        try:
+            return zero.llm.generate(rewrite_prompt, model=model or "expert").strip()
+        except Exception as err:
+            print(f"[API] Hebrew enforcement failed: {err}")
+            return source
+
+    last_candidate = text
+    for attempt in range(2):
+        candidate = _rewrite(text, strict=attempt == 1)
+        if candidate:
+            last_candidate = candidate
+        if candidate and not LATIN_PATTERN.search(candidate):
+            return candidate
+
+    # Final fallback – strip any remaining non-Hebrew letters
+    allowed_pattern = r"[^א-ת0-9\s\-–—.,;:!?\"'()\[\]{}<>/\\|+=]"
+    sanitized = re.sub(allowed_pattern, "", last_candidate)
+    if sanitized.strip():
+        return sanitized.strip()
+
+    return text
+
 # Mount static files
 try:
     app.mount("/static", StaticFiles(directory="."), name="static")
@@ -413,51 +515,11 @@ async def serve_logo(filename: str):
 
 
 # ============================================================================
-# Startup/Shutdown
+# Startup/Shutdown - Moved to lifespan context manager above
 # ============================================================================
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize Zero Agent on startup"""
-    try:
-        zero.initialize()
-        # Initialize Computer Control Agent
-        if COMPUTER_CONTROL_AVAILABLE:
-            initialize_computer_control()
-            print("[API] Computer Control Agent initialized")
-        
-        # ============================================================
-        # Phase 1: Preload LLM Model (eliminate cold start!)
-        # ============================================================
-        print("[API] Preloading LLM model...")
-        try:
-            import requests
-            # Warm up the model with a simple request
-            response = requests.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": "qwen2.5:3b",
-                    "prompt": "test",
-                    "stream": False
-                },
-                timeout=30
-            )
-            if response.status_code == 200:
-                print("[API] OK LLM model preloaded successfully! (No more cold start)")
-            else:
-                print(f"[API] WARNING LLM preload responded with code {response.status_code}")
-        except Exception as preload_error:
-            print(f"[API] WARNING LLM preload failed (will load on first request): {preload_error}")
-        
-    except Exception as e:
-        print(f"[API] ERROR Initialization failed: {e}")
-        raise
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    print("\n[API] Shutting down...")
+# Note: @app.on_event("startup") and @app.on_event("shutdown") are deprecated
+# in FastAPI and have been replaced with the lifespan context manager.
+# See the lifespan function definition above for the current implementation.
 
 
 # ============================================================================
@@ -775,8 +837,8 @@ async def chat(request: ChatRequest, http_request: Request):
             'לחץ ', 'תלחץ ', 'לחיצה ',
             'click ', 'press ',
             # Type commands
-            'הקלד ', 'תקליד ', 'כתוב ', 'תכתוב ',
-            'type ', 'write ', 'enter ',
+            'הקלד ', 'תקליד ',
+            'type ', 'enter ',
             # Scroll commands
             'גלול ', 'תגלול ',
             'scroll ',
@@ -1153,6 +1215,9 @@ async def chat(request: ChatRequest, http_request: Request):
             else:
                 response = zero.llm.generate(prompt, model=model)
         
+        # Enforce Hebrew-only output when אפשרי
+        response = enforce_hebrew_output(response, model)
+
         # Remember conversation (Phase 3)
         if zero.memory:
             zero.memory.remember(
@@ -1885,7 +1950,7 @@ async def chat_stream(request: Request):
             # Click commands
             'לחץ ', 'תלחץ ', 'קליק ', 'click ',
             # Type commands
-            'כתוב ', 'תכתוב ', 'הקלד ', 'תקליד ', 'type ', 'write ',
+            'הקלד ', 'תקליד ', 'type ',
             # Other
             'צלם מסך', 'screenshot', 'סגור', 'close'
         ]

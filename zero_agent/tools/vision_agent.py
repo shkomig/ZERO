@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import torch
-from transformers import pipeline
+from transformers import pipeline, AutoImageProcessor, AutoProcessor
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import json
@@ -108,10 +108,15 @@ class VisionAgent:
         """Initialize AI models with fallbacks"""
         try:
             # Object detection
+            object_processor = AutoImageProcessor.from_pretrained(
+                "facebook/detr-resnet-50",
+                use_fast=True
+            )
             self.object_detector = pipeline(
-                "object-detection", 
+                "object-detection",
                 model="facebook/detr-resnet-50",
-                device=0 if torch.cuda.is_available() else -1
+                device=0 if torch.cuda.is_available() else -1,
+                image_processor=object_processor
             )
             logger.info("Object detection model loaded")
         except Exception as e:
@@ -120,10 +125,18 @@ class VisionAgent:
         
         try:
             # OCR
+            try:
+                ocr_processor = AutoProcessor.from_pretrained(
+                    "microsoft/trocr-base-printed",
+                    use_fast=True
+                )
+            except TypeError:
+                ocr_processor = AutoProcessor.from_pretrained("microsoft/trocr-base-printed")
             self.ocr_reader = pipeline(
-                "image-to-text", 
+                "image-to-text",
                 model="microsoft/trocr-base-printed",
-                device=0 if torch.cuda.is_available() else -1
+                device=0 if torch.cuda.is_available() else -1,
+                image_processor=ocr_processor
             )
             logger.info("OCR model loaded")
         except Exception as e:
@@ -132,10 +145,15 @@ class VisionAgent:
         
         try:
             # Image classification
+            classification_processor = AutoImageProcessor.from_pretrained(
+                "google/vit-base-patch16-224",
+                use_fast=True
+            )
             self.image_classifier = pipeline(
-                "image-classification", 
+                "image-classification",
                 model="google/vit-base-patch16-224",
-                device=0 if torch.cuda.is_available() else -1
+                device=0 if torch.cuda.is_available() else -1,
+                image_processor=classification_processor
             )
             logger.info("Image classification model loaded")
         except Exception as e:

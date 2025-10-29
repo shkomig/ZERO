@@ -14,12 +14,22 @@ class ContextAwareRouter:
     Understands when a task needs deep reasoning vs pure coding
     """
     
-    # Keywords for initial categorization (updated for mistral:latest)
+    # Keywords for initial categorization (updated with Mixtral 8x7B)
     KEYWORDS = {
+        "expert": [
+            "advanced", "expert", "professional", "sophisticated", "complex",
+            "comprehensive", "detailed analysis", "multi-step", "intricate",
+            "advanced reasoning", "expert level", "professional grade",
+            "מתקדם", "מורכב", "מקצועי", "מומחה", "מעמיק",
+            "שלב אחר שלב", "צעד אחר צעד", "חלונות", "חלון", "קומות", "קומה",
+            "רגליים", "נתונים מסיחים", "הצג את החישוב", "chain-of-thought",
+            "מכתב", "מכתבים", "נוסח", "התפטרות", "מסמך רשמי"
+        ],
         "coder": [
             "code", "python", "javascript", "function", "class", "debug",
-            "syntax", "compile", "import", "variable", "script", "כתוב",
-            "קוד", "פונקציה", "תכנות", "פיתוח"
+            "syntax", "compile", "import", "variable", "script",
+            "קוד", "פונקציה", "תכנות", "פיתוח", "programming", "algorithm",
+            "software", "API", "database"
         ],
         "smart": [
             "analyze", "strategy", "philosophy", "complex", "reasoning",
@@ -34,6 +44,14 @@ class ContextAwareRouter:
         ]
     }
     
+    # Logic / reasoning indicators (force expert)
+    LOGIC_KEYWORDS = [
+        "שלב אחר שלב", "צעד אחר צעד", "הצג את החישוב", "נתונים מסיחים",
+        "חלונות", "חלון", "קומות", "קומה", "טרקטור", "גלגלים",
+        "רגליים", "solve step by step", "show your work", "logical puzzle",
+        "מכתב", "נוסח", "התפטרות", "כתב רשמי"
+    ]
+
     # Context indicators for deep reasoning
     DEPTH_INDICATORS = [
         "strategy", "approach", "plan", "design", "optimize",
@@ -65,13 +83,16 @@ class ContextAwareRouter:
             return force_model
         
         if not self.use_smart_routing:
-            return "fast"
+            return "expert"
         
         task_lower = task.lower()
+
+        if any(keyword in task_lower for keyword in self.LOGIC_KEYWORDS):
+            return "expert"
         
         # Step 1: Quick check for obviously simple tasks
         if self._is_simple_task(task_lower):
-            return "fast"
+            return "expert"
         
         # Step 2: Check if it's pure technical (no strategy)
         if self._is_pure_technical(task_lower):
@@ -155,6 +176,7 @@ class ContextAwareRouter:
         """Fallback keyword-based routing"""
         scores = {
             "fast": 0,
+            "expert": 0,
             "coder": 0,
             "smart": 0,
             "balanced": 0
@@ -169,7 +191,7 @@ class ContextAwareRouter:
         best_model = max(scores.items(), key=lambda x: x[1])
         
         if best_model[1] == 0:
-            return "fast"
+            return "expert"
         
         return best_model[0]
     
@@ -194,7 +216,14 @@ class ContextAwareRouter:
         requires_multi = False
         
         # Determine reasoning
-        if model == "smart":
+        if model == "expert":
+            if any(word in task_lower for word in ["advanced", "expert", "professional", "sophisticated"]):
+                reasons.append("Advanced/expert level task")
+            if context_score > 0.7:
+                reasons.append("Very high complexity requiring expert reasoning")
+            confidence = 0.95
+            
+        elif model == "smart":
             if context_score > 0.6:
                 reasons.append("High complexity requiring deep reasoning")
             if any(word in task_lower for word in ["strategy", "financial", "trading"]):

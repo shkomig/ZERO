@@ -6,7 +6,7 @@ Zero Agent is an advanced autonomous AI agent that executes complex tasks on you
 
 ## ✨ Features
 
-- **🧠 Multi-Model Intelligence**: Automatically routes tasks to the best AI model (Mistral, DeepSeek, Llama, Qwen)
+- **🧠 Multi-Model Intelligence**: Automatically routes tasks to the best AI model (Mistral, Mixtral 8x7B, DeepSeek, Llama, Qwen)
 - **🇮🇱 Hebrew Support**: Native Hebrew language support with excellent quality
 - **🔧 Powerful Tools**: Git operations, system monitoring, web automation, screen capture
 - **💾 RAG Memory**: Learns from past successes and failures (224+ conversations stored)
@@ -147,6 +147,7 @@ Zero Agent
 │   └── Config Manager
 ├── Models
 │   ├── Mistral:latest (Default - Hebrew optimized)
+│   ├── Mixtral:8x7b (Expert - Advanced reasoning)
 │   ├── DeepSeek-r1:32b (Complex reasoning)
 │   ├── Llama3.1:8b (Fast responses)
 │   └── Qwen2.5-coder:32b (Coding tasks)

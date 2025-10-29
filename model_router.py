@@ -13,13 +13,23 @@ class ModelRouter:
     Smart router that analyzes task and selects optimal model
     """
     
-    # Keywords for model selection (updated for mistral:latest)
+    # Keywords for model selection (updated with Mixtral 8x7B)
     KEYWORDS = {
+        "expert": [
+            "advanced", "complex", "sophisticated", "expert", "professional",
+            "comprehensive", "detailed analysis", "multi-step", "intricate",
+            "advanced reasoning", "expert level", "professional grade",
+            "מתקדם", "מורכב", "מקצועי", "מומחה", "מעמיק",
+            "שלב אחר שלב", "צעד אחר צעד", "חלון", "חלונות",
+            "קומה", "קומות", "רגליים", "נתונים מסיחים",
+            "הצג את החישוב", "היגיון", "מכתב", "התפטרות", "נוסח"
+        ],
         "coder": [
             "write code", "write a function", "write a script", "debug this code",
             "fix this code", "refactor code", "optimize code", "code review",
             "implement", "create a class", "create a function", "כתוב קוד",
-            "בנה פונקציה", "תקן את הקוד", "צור קוד", "פיתוח"
+            "בנה פונקציה", "תקן את הקוד", "צור קוד", "פיתוח", "programming",
+            "algorithm"
         ],
         "smart": [
             "analyze deeply", "explain in detail", "philosophy", "complex reasoning",
@@ -29,11 +39,16 @@ class ModelRouter:
             "ניתוח מעמיק", "חשיבה ביקורתית"
         ],
         "fast": [
-            "quick", "simple", "what is", "מה זה", "calculate", "convert", "translate",
+            "quick", "simple", "what is", "מה זה", "convert", "translate",
             "define", "summarize", "list", "count", "basic", "easy", "explain",
-            "?", "כמה", "איך", "למה", "מתי", "פתח", "צור", "בדוק"
+            "?", "מתי", "פתח", "צור", "בדוק"
         ]
     }
+    LOGIC_KEYWORDS = [
+        "שלב אחר שלב", "צעד אחר צעד", "הצג את החישוב", "נתונים מסיחים",
+        "חלון", "חלונות", "קומה", "קומות", "רגליים", "חידה לוגית",
+        "logical puzzle", "show your work", "מכתב", "נוסח", "התפטרות"
+    ]
     
     def __init__(self, llm):
         self.llm = llm
@@ -54,13 +69,17 @@ class ModelRouter:
             return force_model
         
         if not self.use_smart_routing:
-            return "fast"  # Default
+            return "expert"  # Default
         
         task_lower = task.lower()
         
+        if any(keyword in task_lower for keyword in self.LOGIC_KEYWORDS):
+            return "expert"
+
         # Score each model type
         scores = {
             "fast": 0,
+            "expert": 0,
             "coder": 0,
             "smart": 0,
             "balanced": 0
@@ -97,12 +116,14 @@ class ModelRouter:
         
         # If no clear winner (all zeros or tie), use balanced
         if best_model[1] == 0:
-            return "fast"  # Default for generic tasks
+            return "expert"  # Default for generic tasks
         
-        # If tie between models, prefer in this order: fast > smart > balanced > coder
+        # If tie between models, prefer in this order: fast > expert > smart > balanced > coder
         if list(scores.values()).count(best_model[1]) > 1:
             if scores["fast"] == best_model[1]:
-                return "fast"
+                return "expert"
+            elif scores["expert"] == best_model[1]:
+                return "expert"
             elif scores["smart"] == best_model[1]:
                 return "smart"
             elif scores["balanced"] == best_model[1]:
@@ -127,7 +148,14 @@ class ModelRouter:
         reasons = []
         
         # Explain decision
-        if model == "coder":
+        if model == "expert":
+            if any(kw in task_lower for kw in ["advanced", "complex", "expert", "professional"]):
+                reasons.append("Advanced/expert level task")
+            if len(task.split()) > 50:
+                reasons.append("Very detailed, complex task")
+            confidence = 0.95
+            
+        elif model == "coder":
             if any(kw in task_lower for kw in ["write code", "debug", "implement"]):
                 reasons.append("Task involves coding")
             if any(pattern in task for pattern in ['```', 'def ', 'class ']):
