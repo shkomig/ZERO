@@ -417,49 +417,11 @@ CODE_BLOCK_PATTERN = re.compile(r"```")
 
 
 def enforce_hebrew_output(text: str, model: str) -> str:
-    """Ensure final text is fully Hebrew (unless code blocks are present)."""
-    if not text:
-        return text
-    if CODE_BLOCK_PATTERN.search(text):
-        return text
-    if not LATIN_PATTERN.search(text):
-        return text
-    print("[API] Enforcing Hebrew output (detected Latin characters)")
-
-    def _rewrite(source: str, strict: bool) -> str:
-        instruction = (
-            "כתוב מחדש בעברית תקנית בלבד, ללא אותיות לטיניות וללא מילים באנגלית. "
-            "שמור על המשמעות, על המבנה ועל כל המספרים המקוריים."
-        )
-        if strict:
-            instruction += " אם מופיעה מילה זרה – החלף אותה במילה עברית שוות-ערך או בתעתיק עברי."
-        rewrite_prompt = (
-            f"{instruction}\n\n"
-            "טקסט לתיקון:\n\"\"\"\n"
-            f"{source}\n"
-            "\"\"\"\n\n"
-            "תשובה מתוקנת בעברית:\n"
-        )
-        try:
-            return zero.llm.generate(rewrite_prompt, model=model or "expert").strip()
-        except Exception as err:
-            print(f"[API] Hebrew enforcement failed: {err}")
-            return source
-
-    last_candidate = text
-    for attempt in range(2):
-        candidate = _rewrite(text, strict=attempt == 1)
-        if candidate:
-            last_candidate = candidate
-        if candidate and not LATIN_PATTERN.search(candidate):
-            return candidate
-
-    # Final fallback – strip any remaining non-Hebrew letters
-    allowed_pattern = r"[^א-ת0-9\s\-–—.,;:!?\"'()\[\]{}<>/\\|+=]"
-    sanitized = re.sub(allowed_pattern, "", last_candidate)
-    if sanitized.strip():
-        return sanitized.strip()
-
+    """
+    DISABLED: This function was causing severe text corruption by removing characters.
+    The proper solution is to use correct prompt templates and parameters.
+    """
+    # Simply return the original text without any modifications
     return text
 
 # Mount static files
@@ -1096,39 +1058,9 @@ async def chat(request: ChatRequest, http_request: Request):
         except Exception as e:
             print(f"[API] Warning: Could not load enhanced_system_prompt: {e}")
             # Fallback to simple, clean prompt
-            preferences = """אתה Zero Agent, עוזר AI חכם עם זיכרון. ענה תמיד ורק בעברית תקנית.
+            preferences = """You are Zero Agent - a helpful AI assistant powered by Mixtral 8x7B.
 
-חוקים קריטיים:
-1. תשובות קצרות ישירות לשאלות פשוטות
-2. תשובות מפורטות לשאלות מורכבות
-3. ללא הקדמות מיותרות
-4. ללא אימוג'י או סמלים
-5. עיצוב נקי ומסודר
-6. **חובה לענות בעברית בלבד - אסור להשתמש באנגלית, סינית, או שפה אחרת**
-
-הנחיות זיכרון (Phase 3):
-- כשהמשתמש משתף מידע אישי, אשר: "רשמתי! אני זוכר ש..."
-- כשנשאלת על שיחות קודמות, השתמש בזיכרון שלך
-- היה פרואקטיבי עם זכרונות רלוונטיים
-
-דוגמאות:
-שאלה: 5+5
-תשובה: 10
-
-שאלה: כמה זה 6+5
-תשובה: 11
-
-שאלה: מה זה Python?
-תשובה: Python היא שפת תכנות רב-תכליתית, קלה ללמידה ושימושית לפיתוח אפליקציות, ניתוח נתונים ואוטומציה.
-
-שאלה: אני אוהב קפה
-תשובה: רשמתי! אני זוכר שאתה אוהב קפה.
-
-שאלה: מה אני אוהב?
-תשובה: אתה אוהב קפה - אמרת לי את זה קודם.
-
-שאלה: מה זה בינה מלאכותית?
-תשובה: בינה מלאכותית היא תחום במדעי המחשב העוסק בפיתוח מערכות המסוגלות לבצע משימות הדורשות אינטליגנציה אנושית, כמו למידה, הבנת שפה וקבלת החלטות."""
+Be direct, accurate, and clear. Match the user's language. No unnecessary preambles."""
         
         # Build prompt with modular architecture (from llm-concise-guide.md)
         # Structure: Role + Constraints + Format + Task (for better instruction following)
@@ -1158,13 +1090,13 @@ async def chat(request: ChatRequest, http_request: Request):
             prompt += extra_info + "\n"
             print(f"[Prompt] Total extra_info added: {len(extra_info)} chars")
         
-        # 4. User message - clear and direct
-        # Important: Add language enforcement for questions in other languages
+        # 4. User message - Mixtral requires [INST] tags!
+        # Wrap everything in Mixtral's prompt template: <s>[INST] ... [/INST]
         user_message = request.message
-        if any(ord(c) < 128 for c in user_message if c.isalpha()):  # Has Latin chars
-            prompt += f"\n**הערה חשובה: השאלה באנגלית/שפה אחרת, אבל חובה לענות בעברית בלבד!**\n\n"
         
-        prompt += f"ש: {request.message}\nת: "
+        # Prepare the final prompt with Mixtral template
+        instruction_content = prompt + f"\nשאלה: {user_message}\nתשובה:"
+        prompt = f"<s>[INST] {instruction_content} [/INST]"
         
         # DEBUG: Print first and last 500 chars of prompt
         print(f"[Prompt Debug] First 500 chars:\n{prompt[:500]}\n")
@@ -1984,7 +1916,7 @@ async def chat_stream(request: Request):
                     prompt_parts = [get_system_prompt(detailed=True)]
                 except Exception as e:
                     print(f"[API] Warning: Could not load enhanced_system_prompt: {e}")
-                    prompt_parts = ["אתה Zero Agent. ענה **תמיד ורק** בעברית תקנית, גם אם השאלה באנגלית או שפה אחרת."]
+                    prompt_parts = ["You are Zero Agent - a helpful AI assistant powered by Mixtral 8x7B. Be direct, accurate, and clear. Match the user's language."]
                 
                 # Add conversation history if available
                 if conversation_history:
@@ -1994,9 +1926,7 @@ async def chat_stream(request: Request):
                         content = msg.get("content", "")
                         prompt_parts.append(f"{role}: {content}")
                 
-                # Add language enforcement if question is in English
-                if any(ord(c) < 128 for c in message if c.isalpha()):
-                    prompt_parts.append("\n**חשוב: השאלה באנגלית, אבל חובה לענות בעברית!**")
+                # Language matching is handled by the system prompt
                 
                 # Add current question
                 prompt_parts.append(f"ש: {message}")

@@ -100,12 +100,13 @@ class StreamingMultiModelLLM:
                 "options": {
                     "num_predict": max_tokens,
                     "num_ctx": 16384,  # Large context window for detailed responses
-                    "temperature": 0.5,  # ✓ Maximum accuracy (research-based)
+                    "temperature": 0.15,  # ✓ CRITICAL FIX: Reduced from 0.5 to 0.15 (prevents hallucinations!)
                     "top_p": 0.9,  # ✓ High-quality nucleus sampling (research-based)
                     "top_k": 40,  # ✓ Optimal focus on relevant tokens (research-based)
                     "repeat_penalty": 1.15,  # ✓ Higher penalty to prevent repetition
                     "frequency_penalty": 0.2,  # ✓ Stronger penalty for repetitive tokens
-                    "presence_penalty": 0.15  # ✓ Better vocabulary diversity
+                    "presence_penalty": 0.15,  # ✓ Better vocabulary diversity
+                    "stop": ["</s>", "[INST]", "[/INST]"]  # ✓ Mixtral-specific stop tokens
                 }
             }
             
@@ -220,13 +221,13 @@ class StreamingMultiModelLLM:
                 "options": {
                     "num_predict": 4096,  # Higher limit for detailed responses
                     "num_ctx": 16384,  # Larger context window for better context understanding
-                    "temperature": 0.5,  # ✓ Maximum accuracy for detailed responses (research-based)
+                    "temperature": 0.15,  # ✓ CRITICAL FIX: Reduced from 0.5 to 0.15 (prevents hallucinations!)
                     "top_p": 0.9,  # ✓ High-quality nucleus sampling (research-based)
                     "top_k": 40,  # ✓ Optimal focus on relevant tokens
                     "repeat_penalty": 1.15,  # ✓ Balanced penalty to avoid repetition
                     "frequency_penalty": 0.2,  # ✓ Stronger penalty for repetitive tokens
                     "presence_penalty": 0.15,  # ✓ Better vocabulary diversity
-                    "stop": ["\n\n\n\n", "**999.**", "[INST]", "[/INST]", "<|im_end|>"]  # Stop at boundaries and instruction markers
+                    "stop": ["</s>", "[INST]", "[/INST]"]  # ✓ Mixtral-specific stop tokens
                 }
             }
             
