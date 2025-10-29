@@ -1,5 +1,41 @@
 # Changelog
 
+## [v3.2.0] - 2025-10-29
+
+### 🎤 Voice Interface Release - Complete STT/TTS Implementation
+
+#### ✨ Added
+- **Speech-to-Text (STT)** - זיהוי דיבור בזמן אמת עם תמיכה בעברית ואנגלית
+- **Text-to-Speech (TTS)** - המרת תשובות לקול עם Google TTS
+- **Stop Button** - כפתור עצירה לשליטה בהשמעת אודיו
+- **Male Voice Option** - אפשרות קול גבר עם מבטא בריטי
+- **Real-time Transcription** - הקלטה רציפה עם הצגת טקסט בזמן אמת
+- **Multi-language Support** - תמיכה מלאה בעברית ואנגלית
+- **Visual Indicators** - אינדיקטורים ויזואליים למצב הקלטה והשמעה
+
+#### 🔧 Changed
+- **UI Enhancement** - שיפורי ממשק משתמש עם אנימציות חלקות
+- **TTS Service** - מעבר מ-pyttsx3 ל-Google TTS (gTTS) לביצועים טובים יותר
+- **Voice Recognition** - שיפור זיהוי דיבור עם continuous recording
+- **Audio Playback** - השמעת אודיו ישירות בדפדפן
+
+#### 🛠️ Technical Implementation
+- **TTS Service** - שירות FastAPI על פורט 9033 עם gTTS
+- **STT Integration** - שימוש ב-Web Speech API של הדפדפן
+- **Voice Control** - מערכת שליטה מלאה בהשמעת אודיו
+- **Language Detection** - זיהוי אוטומטי של שפת הדיבור
+
+#### 📊 Performance
+- **Response Time** - 5-8 שניות מקצה לקצה (דיבור → תשובה קולית)
+- **Audio Quality** - איכות MP3 ברורה וטבעית
+- **Real-time STT** - הקלטה מיידית ללא עיכובים
+- **Browser Compatibility** - תמיכה בדפדפנים מודרניים
+
+#### 📚 Documentation
+- **VOICE_INTERFACE_FINAL_REPORT.md** - דוח מפורט על היישום
+- **VOICE_IMPROVEMENTS_REPORT.md** - פירוט השיפורים שבוצעו
+- **VOICE_INTERFACE_COMPLETE.md** - סטטוס סיום הפרויקט
+
 ## [v3.1.2] - $(date +%Y-%m-%d)
 
 
