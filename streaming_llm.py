@@ -92,7 +92,7 @@ class StreamingMultiModelLLM:
         
         try:
             url = f"{self.base_url}/api/generate"
-            # OPTIMIZED SETTINGS for Mixtral 8x7B - Expert Level Performance
+            # OPTIMIZED SETTINGS for Mixtral 8x7B - MAXIMUM QUALITY (based on research)
             payload = {
                 "model": model_name,
                 "prompt": prompt,
@@ -100,12 +100,12 @@ class StreamingMultiModelLLM:
                 "options": {
                     "num_predict": max_tokens,
                     "num_ctx": 16384,  # Large context window for detailed responses
-                    "temperature": 0.6,  # Lower for more accurate mathematical responses
-                    "top_p": 0.85,  # Slightly lower for more focused responses
-                    "top_k": 30,  # More focused for mathematical accuracy
-                    "repeat_penalty": 1.1,  # Standard penalty to avoid repetition
-                    "frequency_penalty": 0.1,  # Additional penalty for repetitive tokens
-                    "presence_penalty": 0.1  # Encourage diverse vocabulary
+                    "temperature": 0.5,  # ✓ Maximum accuracy (research-based)
+                    "top_p": 0.9,  # ✓ High-quality nucleus sampling (research-based)
+                    "top_k": 40,  # ✓ Optimal focus on relevant tokens (research-based)
+                    "repeat_penalty": 1.15,  # ✓ Higher penalty to prevent repetition
+                    "frequency_penalty": 0.2,  # ✓ Stronger penalty for repetitive tokens
+                    "presence_penalty": 0.15  # ✓ Better vocabulary diversity
                 }
             }
             
@@ -210,8 +210,8 @@ class StreamingMultiModelLLM:
         
         try:
             url = f"{self.base_url}/api/generate"
-            # OPTIMIZED SETTINGS for Mixtral 8x7B - Professional Level Performance
-            # Based on extensive research and best practices for Mixtral models
+            # OPTIMIZED SETTINGS for Mixtral 8x7B - MAXIMUM QUALITY (research-based)
+            # Based on extensive research from best-results-mixtral.md
             
             payload = {
                 "model": model_name,
@@ -220,12 +220,12 @@ class StreamingMultiModelLLM:
                 "options": {
                     "num_predict": 4096,  # Higher limit for detailed responses
                     "num_ctx": 16384,  # Larger context window for better context understanding
-                    "temperature": 0.35,  # High דייקנות ונאמנות לעובדות
-                    "top_p": 0.85,  # מיקוד גבוה תוך שמירה על טבעיות
-                    "top_k": 40,  # Focused but not too restrictive
-                    "repeat_penalty": 1.18,  # Higher penalty to avoid looping
-                    "frequency_penalty": 0.1,  # Additional penalty for repetitive tokens
-                    "presence_penalty": 0.1,  # Encourage diverse vocabulary
+                    "temperature": 0.5,  # ✓ Maximum accuracy for detailed responses (research-based)
+                    "top_p": 0.9,  # ✓ High-quality nucleus sampling (research-based)
+                    "top_k": 40,  # ✓ Optimal focus on relevant tokens
+                    "repeat_penalty": 1.15,  # ✓ Balanced penalty to avoid repetition
+                    "frequency_penalty": 0.2,  # ✓ Stronger penalty for repetitive tokens
+                    "presence_penalty": 0.15,  # ✓ Better vocabulary diversity
                     "stop": ["\n\n\n\n", "**999.**", "[INST]", "[/INST]", "<|im_end|>"]  # Stop at boundaries and instruction markers
                 }
             }
