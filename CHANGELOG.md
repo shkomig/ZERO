@@ -12,26 +12,42 @@
 - **Real-time Transcription** - הקלטה רציפה עם הצגת טקסט בזמן אמת
 - **Multi-language Support** - תמיכה מלאה בעברית ואנגלית
 - **Visual Indicators** - אינדיקטורים ויזואליים למצב הקלטה והשמעה
+- **Auto-send on Silence** - שליחה אוטומטית אחרי זיהוי שקט
+- **Faster-Whisper STT** - שירות STT מתקדם עם CUDA optimization
+- **Advanced Voice UI** - ממשק קולי מתקדם עם אפשרויות בחירה
+- **Notification System** - מערכת התראות ויזואליות למשתמש
+- **Favicon Support** - תמיכה ב-favicon.ico
 
 #### 🔧 Changed
 - **UI Enhancement** - שיפורי ממשק משתמש עם אנימציות חלקות
 - **TTS Service** - מעבר מ-pyttsx3 ל-Google TTS (gTTS) לביצועים טובים יותר
 - **Voice Recognition** - שיפור זיהוי דיבור עם continuous recording
 - **Audio Playback** - השמעת אודיו ישירות בדפדפן
+- **STT Fallback** - מנגנון fallback מ-Web Speech API ל-Faster-Whisper
+- **Error Handling** - שיפור טיפול בשגיאות עם הודעות ברורות
+- **Language Detection** - זיהוי שפה משופר עם fallback אוטומטי
 
 #### 🛠️ Technical Implementation
 - **TTS Service** - שירות FastAPI על פורט 9033 עם gTTS
-- **STT Integration** - שימוש ב-Web Speech API של הדפדפן
+- **STT Service** - שירות FastAPI על פורט 9034 עם Faster-Whisper
+- **Web STT Service** - שירות WebSocket על פורט 9035
 - **Voice Control** - מערכת שליטה מלאה בהשמעת אודיו
 - **Language Detection** - זיהוי אוטומטי של שפת הדיבור
+- **Auto-send Logic** - לוגיקה חכמה לשליחה אוטומטית
+- **VAD Integration** - Voice Activity Detection לזיהוי שקט
+- **MediaRecorder API** - הקלטת אודיו מתקדמת בדפדפן
 
 #### 📊 Performance
-- **Response Time** - 5-8 שניות מקצה לקצה (דיבור → תשובה קולית)
+- **Response Time** - 3-10 שניות מקצה לקצה (דיבור → תשובה קולית)
 - **Audio Quality** - איכות MP3 ברורה וטבעית
 - **Real-time STT** - הקלטה מיידית ללא עיכובים
 - **Browser Compatibility** - תמיכה בדפדפנים מודרניים
+- **CUDA Acceleration** - זיהוי דיבור מהיר עם GPU
+- **Memory Efficiency** - שימוש יעיל בזיכרון
 
 #### 📚 Documentation
+- **ZERO_AGENT_COMPLETE_SYSTEM_REPORT.md** - דוח מקיף על המערכת
+- **README.md** - תיעוד מפורט עם הוראות התקנה
 - **VOICE_INTERFACE_FINAL_REPORT.md** - דוח מפורט על היישום
 - **VOICE_IMPROVEMENTS_REPORT.md** - פירוט השיפורים שבוצעו
 - **VOICE_INTERFACE_COMPLETE.md** - סטטוס סיום הפרויקט

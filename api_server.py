@@ -547,6 +547,15 @@ async def serve_simple():
     raise HTTPException(status_code=404, detail="Simple interface not found")
 
 
+@app.get("/advanced")
+async def serve_advanced():
+    """Serve the advanced voice interface"""
+    html_path = Path("zero_chat_advanced.html")
+    if html_path.exists():
+        return FileResponse(html_path)
+    raise HTTPException(status_code=404, detail="Advanced interface not found")
+
+
 @app.get("/memory-dashboard", response_class=HTMLResponse)
 async def memory_dashboard():
     """

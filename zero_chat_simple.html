@@ -922,18 +922,29 @@
                     console.error('Speech recognition error:', event.error);
                     stopRecording();
                     
-                    // Handle network errors gracefully - don't show alerts
+                    // Handle different error types with specific messages
                     if (event.error === 'network') {
-                        console.log('Network error - speech recognition unavailable, use manual input');
+                        console.log('🌐 Network error - speech recognition unavailable');
+                        console.log('💡 Switching to Faster-Whisper fallback...');
+                        // Switch to Faster-Whisper instead of showing error
+                        showNotification('עובר לזיהוי דיבור מקומי...', 'info');
+                        setTimeout(() => {
+                            startFasterWhisperRecording();
+                        }, 1000);
                         return;
                     }
                     
                     if (event.error === 'not-allowed') {
-                        alert('אנא אפשר גישה למיקרופון בהגדרות הדפדפן');
+                        alert('🎤 אנא אפשר גישה למיקרופון בהגדרות הדפדפן');
                     } else if (event.error === 'no-speech') {
-                        console.log('No speech detected - try again');
+                        console.log('🔇 No speech detected - try speaking louder');
+                        showNotification('לא זוהה דיבור - נסה לדבר יותר חזק', 'info');
+                    } else if (event.error === 'audio-capture') {
+                        console.log('🎤 Audio capture error - check microphone');
+                        showNotification('שגיאה במיקרופון - בדוק את החיבור', 'error');
                     } else {
-                        console.log('Speech recognition error:', event.error, '- use manual input instead');
+                        console.log('❌ Speech recognition error:', event.error, '- use manual input instead');
+                        showNotification('שגיאה בזיהוי דיבור - השתמש בהקלדה', 'error');
                     }
                 };
 
@@ -968,6 +979,11 @@
         }
 
         function startRecording() {
+            if (isRecording) {
+                console.log('🎤 Already recording, ignoring duplicate start');
+                return;
+            }
+            
             if (recognition) {
                 isRecording = true;
                 document.getElementById('micBtn').classList.add('recording');
@@ -978,16 +994,108 @@
                 recognition.lang = browserLang;
                 console.log(`🎤 Starting voice recognition with language: ${browserLang}`);
                 
-                recognition.start();
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('🎤 Error starting recognition:', error);
+                    if (error.name === 'InvalidStateError') {
+                        console.log('🎤 Recognition already started, stopping and restarting...');
+                        recognition.stop();
+                        setTimeout(() => {
+                            try {
+                                recognition.start();
+                            } catch (e) {
+                                console.error('🎤 Failed to restart recognition:', e);
+                                stopRecording();
+                            }
+                        }, 100);
+                    } else {
+                        stopRecording();
+                    }
+                }
+            } else {
+                console.log('🌐 Browser STT not available, trying Faster-Whisper fallback...');
+                startFasterWhisperRecording();
             }
         }
 
+        // Faster-Whisper fallback for STT
+        let mediaRecorder;
+        let audioChunks = [];
+
+        function startFasterWhisperRecording() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showNotification('זיהוי דיבור לא נתמך בדפדפן זה', 'error');
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        sendToFasterWhisper(audioBlob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    document.getElementById('micBtn').classList.add('recording');
+                    document.getElementById('chatInput').placeholder = 'Recording with Faster-Whisper... / מקליט עם Faster-Whisper...';
+                    showNotification('הקלטה עם Faster-Whisper...', 'info');
+                })
+                .catch(error => {
+                    console.error('Error accessing microphone:', error);
+                    showNotification('שגיאה בגישה למיקרופון', 'error');
+                });
+        }
+
+        function sendToFasterWhisper(audioBlob) {
+            const formData = new FormData();
+            formData.append('audio_file', audioBlob, 'recording.webm');
+
+            fetch('http://localhost:9034/stt', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.transcript) {
+                    document.getElementById('chatInput').value = data.transcript;
+                    showNotification('זיהוי דיבור הושלם!', 'success');
+                    // Auto-send if complete sentence
+                    if (data.transcript.trim() && /[.!?]$/.test(data.transcript.trim())) {
+                        setTimeout(() => {
+                            sendMessage();
+                        }, 500);
+                    }
+                } else {
+                    showNotification('לא זוהה דיבור', 'warning');
+                }
+            })
+            .catch(error => {
+                console.error('Faster-Whisper error:', error);
+                showNotification('שגיאה בזיהוי דיבור', 'error');
+            });
+        }
+
         function stopRecording() {
-            if (recognition && isRecording) {
+            if (isRecording) {
                 isRecording = false;
                 document.getElementById('micBtn').classList.remove('recording');
                 document.getElementById('chatInput').placeholder = 'שאל אותי משהו...';
-                recognition.stop();
+                
+                if (recognition) {
+                    recognition.stop();
+                } else if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
             }
         }
 
@@ -1150,12 +1258,78 @@
         }
         
         function stopRecordingAndSend() {
-            if (recognition && isRecording) {
-                recognition.stop();
-                // The recognition.onresult will handle sending
+            if (isRecording) {
+                console.log('🔇 Stopping recording and sending message...');
+                stopRecording();
+                
+                // Get the current input value
+                const inputText = document.getElementById('chatInput').value.trim();
+                if (inputText) {
+                    console.log('📤 Auto-sending message:', inputText);
+                    sendMessage();
+                } else {
+                    console.log('⚠️ No text to send');
+                }
             }
         }
         
+        // Notification system
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            // Set colors based on type
+            const colors = {
+                'info': '#007bff',
+                'warning': '#ffc107',
+                'error': '#dc3545',
+                'success': '#28a745'
+            };
+            notification.style.backgroundColor = colors[type] || colors.info;
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
         // Initialize voice recognition on load
         window.addEventListener('load', () => {
             initVoiceRecognition();
