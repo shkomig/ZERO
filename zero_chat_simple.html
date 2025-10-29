@@ -53,6 +53,16 @@
             background: rgba(255,255,255,0.1);
         }
 
+        #stopTtsBtn.active {
+            display: block !important;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         /* Main Chat Area */
         .main-content {
             flex: 1;
@@ -350,6 +360,9 @@
         <button class="new-chat-btn" id="ttsToggle" onclick="toggleTTS()" style="background: #10a37f; color: white; border-color: #10a37f;">
             🔊 קול מופעל
         </button>
+        <button class="new-chat-btn" id="stopTtsBtn" onclick="stopTTS()" style="background: #d9534f; color: white; border-color: #d9534f; display: none;">
+            ⏸️ עצור קריאה
+        </button>
     </div>
 
     <div class="main-content">
@@ -413,8 +426,8 @@
             try {
                 console.log('🔊 Starting TTS for:', text.substring(0, 50) + '...');
                 
-                // Call TTS API
-                const response = await fetch(`${API_URL}/api/tts?text=${encodeURIComponent(text)}`);
+                // Call TTS API with masculine voice
+                const response = await fetch(`${API_URL}/api/tts?text=${encodeURIComponent(text)}&voice=male`);
                 
                 if (!response.ok) {
                     console.warn('TTS service unavailable');
@@ -433,7 +446,14 @@
                 
                 // Create and play audio
                 currentAudio = new Audio(audioUrl);
+                currentAudio.messageId = messageId;  // Store message ID for stop button
                 isSpeaking = true;
+                
+                // Show stop button
+                const stopTtsBtn = document.getElementById('stopTtsBtn');
+                if (stopTtsBtn) {
+                    stopTtsBtn.classList.add('active');
+                }
                 
                 // Add speaker indicator to message
                 if (messageId) {
@@ -454,6 +474,12 @@
                     currentAudio = null;
                     URL.revokeObjectURL(audioUrl);
                     
+                    // Hide stop button
+                    const stopTtsBtn = document.getElementById('stopTtsBtn');
+                    if (stopTtsBtn) {
+                        stopTtsBtn.classList.remove('active');
+                    }
+                    
                     // Remove speaker indicator
                     if (messageId) {
                         const messageDiv = document.getElementById(messageId);
@@ -472,6 +498,12 @@
                     console.error('Audio playback error:', e);
                     isSpeaking = false;
                     currentAudio = null;
+                    
+                    // Hide stop button on error
+                    const stopTtsBtn = document.getElementById('stopTtsBtn');
+                    if (stopTtsBtn) {
+                        stopTtsBtn.classList.remove('active');
+                    }
                 };
                 
                 await currentAudio.play();
@@ -492,6 +524,26 @@
             }
         }
         
+        function stopTTS() {
+            if (currentAudio) {
+                console.log('⏸️ Stopping TTS');
+                currentAudio.pause();
+                currentAudio = null;
+                isSpeaking = false;
+                
+                // Hide stop button
+                const stopTtsBtn = document.getElementById('stopTtsBtn');
+                if (stopTtsBtn) {
+                    stopTtsBtn.classList.remove('active');
+                }
+                
+                // Remove all speaker indicators
+                document.querySelectorAll('.speaker-indicator').forEach(indicator => {
+                    indicator.remove();
+                });
+            }
+        }
+
         function toggleTTS() {
             ttsEnabled = !ttsEnabled;
             const btn = document.getElementById('ttsToggle');
@@ -833,20 +885,27 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.lang = 'he-IL';  // Hebrew
-                recognition.continuous = false;
-                recognition.interimResults = false;
+                recognition.lang = 'en-US';  // English (auto-detect from speech)
+                recognition.continuous = true;  // ✓ FIX: Allow longer recording
+                recognition.interimResults = true;  // ✓ FIX: Show interim results
 
                 recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    document.getElementById('chatInput').value = transcript;
-                    stopRecording();
+                    // Get all final + interim results
+                    let finalTranscript = '';
+                    let interimTranscript = '';
                     
-                    // Auto-send if VAD is enabled
-                    if (vadEnabled && transcript.trim()) {
-                        console.log('✅ VAD auto-sending message:', transcript);
-                        setTimeout(() => sendMessage(), 100); // Small delay to ensure UI updates
+                    for (let i = 0; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                        } else {
+                            interimTranscript += transcript;
+                        }
                     }
+                    
+                    // Show interim results in real-time
+                    document.getElementById('chatInput').value = finalTranscript + interimTranscript;
+                    console.log('🎤 Transcript:', finalTranscript + interimTranscript);
                 };
 
                 recognition.onerror = (event) => {
@@ -858,7 +917,17 @@
                 };
 
                 recognition.onend = () => {
-                    stopRecording();
+                    console.log('🎤 Recognition ended');
+                    // Don't auto-stop - let user control when to stop
+                    if (isRecording) {
+                        console.log('🎤 Restarting recognition (continuous mode)');
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.warn('Could not restart recognition:', e);
+                            stopRecording();
+                        }
+                    }
                 };
             } else {
                 console.warn('Speech recognition not supported');
@@ -881,7 +950,13 @@
             if (recognition) {
                 isRecording = true;
                 document.getElementById('micBtn').classList.add('recording');
-                document.getElementById('chatInput').placeholder = 'מקשיב...';
+                document.getElementById('chatInput').placeholder = 'Listening... / מקשיב...';
+                
+                // Try to detect browser language, fallback to English
+                const browserLang = navigator.language || 'en-US';
+                recognition.lang = browserLang;
+                console.log(`🎤 Starting voice recognition with language: ${browserLang}`);
+                
                 recognition.start();
             }
         }
