@@ -1,5 +1,8 @@
 # Changelog
 
+## [v3.1.0] - $(date +%Y-%m-%d)
+
+
 כל השינויים המשמעותיים בפרויקט Zero Agent יועדכנו בקובץ זה.
 
 הפורמט מבוסס על [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
