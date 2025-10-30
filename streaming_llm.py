@@ -21,11 +21,11 @@ class StreamingMultiModelLLM:
     # Model configurations (updated with Mixtral 8x7B for advanced tasks!)
     MODELS = {
         "fast": {
-            "name": "mistral:latest",
-            "description": "Ultra-fast chat model, excellent Hebrew support",
-            "size": "4.4GB",
+            "name": "llama3.1:8b",
+            "description": "Ultra-fast chat model, excellent for quick queries",
+            "size": "4.7GB",
             "speed": "⚡⚡⚡⚡⚡",
-            "quality": "⭐⭐⭐⭐⭐"
+            "quality": "⭐⭐⭐⭐"
         },
         "expert": {
             "name": "mixtral:8x7b",
@@ -100,13 +100,13 @@ class StreamingMultiModelLLM:
                 "options": {
                     "num_predict": max_tokens,
                     "num_ctx": 16384,  # Large context window for detailed responses
-                    "temperature": 0.15,  # ✓ CRITICAL FIX: Reduced from 0.5 to 0.15 (prevents hallucinations!)
-                    "top_p": 0.9,  # ✓ High-quality nucleus sampling (research-based)
-                    "top_k": 40,  # ✓ Optimal focus on relevant tokens (research-based)
+                    "temperature": 0.3,  # ✓ Balanced creativity and consistency
+                    "top_p": 0.95,  # ✓ Slightly higher for more creative responses
+                    "top_k": 50,  # ✓ Slightly higher for more diverse responses (research-based)
                     "repeat_penalty": 1.15,  # ✓ Higher penalty to prevent repetition
-                    "frequency_penalty": 0.2,  # ✓ Stronger penalty for repetitive tokens
-                    "presence_penalty": 0.15,  # ✓ Better vocabulary diversity
-                    "stop": ["</s>", "[INST]", "[/INST]"]  # ✓ Mixtral-specific stop tokens
+                    "frequency_penalty": 0.1,  # ✓ Reduced penalty for more natural flow
+                    "presence_penalty": 0.05,  # ✓ Reduced penalty for more natural flow
+                    "stop": ["</s>", "[INST]", "[/INST]"]  # ✓ Mixtral-specific stop tokens (removed Human/Assistant to allow longer responses)
                 }
             }
             
@@ -219,15 +219,15 @@ class StreamingMultiModelLLM:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "num_predict": 4096,  # Higher limit for detailed responses
-                    "num_ctx": 16384,  # Larger context window for better context understanding
-                    "temperature": 0.15,  # ✓ CRITICAL FIX: Reduced from 0.5 to 0.15 (prevents hallucinations!)
-                    "top_p": 0.9,  # ✓ High-quality nucleus sampling (research-based)
-                    "top_k": 40,  # ✓ Optimal focus on relevant tokens
-                    "repeat_penalty": 1.15,  # ✓ Balanced penalty to avoid repetition
-                    "frequency_penalty": 0.2,  # ✓ Stronger penalty for repetitive tokens
-                    "presence_penalty": 0.15,  # ✓ Better vocabulary diversity
-                    "stop": ["</s>", "[INST]", "[/INST]"]  # ✓ Mixtral-specific stop tokens
+                    "num_predict": 8192,  # Even higher limit for detailed responses
+                    "num_ctx": 32768,  # Even larger context window for better context understanding
+                    "temperature": 0.3,  # ✓ Balanced creativity and consistency
+                    "top_p": 0.95,  # ✓ Slightly higher for more creative responses
+                    "top_k": 50,  # ✓ Slightly higher for more diverse responses
+                    "repeat_penalty": 1.1,  # ✓ Slightly reduced to allow more natural flow
+                    "frequency_penalty": 0.1,  # ✓ Reduced penalty for more natural flow
+                    "presence_penalty": 0.05,  # ✓ Reduced penalty for more natural flow
+                    "stop": ["</s>", "[INST]", "[/INST]"]  # ✓ Mixtral-specific stop tokens (removed Human/Assistant to allow longer responses)
                 }
             }
             

@@ -92,7 +92,7 @@ class ContextAwareRouter:
         
         # Step 1: Quick check for obviously simple tasks
         if self._is_simple_task(task_lower):
-            return "expert"
+            return "fast"
         
         # Step 2: Check if it's pure technical (no strategy)
         if self._is_pure_technical(task_lower):
@@ -117,8 +117,8 @@ class ContextAwareRouter:
     
     def _is_simple_task(self, task: str) -> bool:
         """Check if task is obviously simple"""
-        if len(task.split()) < 8:
-            simple_patterns = ["what is", "calculate", "convert", "define"]
+        if len(task.split()) < 12:
+            simple_patterns = ["what is", "calculate", "convert", "define", "tell me about", "explain", "+", "-", "*", "/", "=", "hello", "hi", "who", "when", "where", "how does", "what are"]
             if any(pattern in task for pattern in simple_patterns):
                 return True
         return False
@@ -191,6 +191,10 @@ class ContextAwareRouter:
         best_model = max(scores.items(), key=lambda x: x[1])
         
         if best_model[1] == 0:
+            return "expert"
+        
+        # For simple questions, prefer expert model for better quality
+        if best_model[0] == "fast" and best_model[1] <= 1:
             return "expert"
         
         return best_model[0]

@@ -627,7 +627,7 @@ async def memory_dashboard():
 
 
 @app.get("/api/tts")
-async def text_to_speech(text: str):
+async def text_to_speech(text: str, voice: str | None = None):
     """
     Text-to-Speech endpoint - converts text to audio
     
@@ -637,14 +637,20 @@ async def text_to_speech(text: str):
         import requests
         from fastapi.responses import Response
         
-        # Call TTS service (Hebrew TTS on port 9033)
-        tts_url = f"http://localhost:9033/tts?text={text}"
-        response = requests.get(tts_url, timeout=10)
+        # Call TTS service (Hebrew/English TTS on port 9033)
+        import urllib.parse
+        params = {"text": text}
+        if voice:
+            params["voice"] = voice
+        tts_url = f"http://localhost:9033/tts?{urllib.parse.urlencode(params)}"
+        response = requests.get(tts_url, timeout=30)
         
         if response.status_code == 200:
+            # Preserve downstream content-type (mp3/wav)
+            media_type = response.headers.get("content-type", "audio/mpeg")
             return Response(
                 content=response.content,
-                media_type="audio/wav",
+                media_type=media_type,
                 headers={
                     "Content-Disposition": "inline",
                     "Cache-Control": "no-cache"
@@ -740,11 +746,14 @@ async def chat(request: ChatRequest, http_request: Request):
         # Detect search requests - expanded keywords
         search_keywords = [
             'חפש ברשת', 'חפש', 'חיפוש', 'חיפוש על', 
-            'search', 'google', 'search for',
+            'search', 'google', 'search for', 'look up', 'find information',
             'מה המחיר', 'מחיר של', 'מחיר מניית', 'price of', 'price', 'stock price',
             'spy', 'qqq', 'aapl', 'tsla', 'msft', 'amzn', 'googl',  # Popular stocks
             'מה חדש', 'מה השעה', 'מה התאריך', 'what time', 'what date',
-            'איך לבנות', 'how to build', 'tutorial'
+            'איך לבנות', 'how to build', 'tutorial',
+            'latest', 'current', 'recent', 'news', 'today', 'update',
+            'weather', 'temperature', 'forecast',
+            'who is', 'what is the latest', 'tell me about recent'
         ]
         
         if any(keyword in request.message.lower() for keyword in search_keywords):
