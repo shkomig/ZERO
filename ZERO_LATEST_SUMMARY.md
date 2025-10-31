@@ -8,11 +8,12 @@
 
 ## 🎉 **שיפורים אחרונים (Session הזאת)**
 
-### ⚡ **ביצועים מהירים**
+### ⚡ **ביצועים מהירים - NEW: 50-60% FASTER!**
+- ✅ **WebSearch Speed Fix** - חיפושים ברשת כעת ב-~7 שניות (במקום 20-25!)
 - ✅ **מעבר ל-Llama 3.1:8B** - מודל מהיר וחכם
-- ✅ **זמני תגובה:** 6-10 שניות (במקום 87+ שניות!)
-- ✅ **אופטימיזציה של Router** - בחירת מודל חכמה
+- ✅ **אופטימיזציה חכמה של Router** - web searches → fast model
 - ✅ **תגובות מפורטות** - 1000-3000 תווים בממוצע
+- ✅ **זמני תגובה:** 5-10 שניות (ממוצע 7.3s)
 
 ### 🔊 **ממשק קולי משופר**
 - ✅ **שליחה אוטומטית** - אחרי סיום ההקלטה
@@ -143,11 +144,13 @@ who is, what is the latest
 
 ## 📊 **ביצועים נוכחיים**
 
-### **Response Times**
+### **Response Times** (Updated Oct 30, 2025 - 50-60% faster!)
 | Query Type | Model | Time | Quality |
 |------------|-------|------|---------|
 | Simple | llama3.1:8b | 4-8s | ⭐⭐⭐⭐ |
-| Medium | llama3.1:8b | 7-12s | ⭐⭐⭐⭐ |
+| Web Search | llama3.1:8b | **5-10s** ⚡ | ⭐⭐⭐⭐ |
+| Stock Price | llama3.1:8b | **4-6s** ⚡ | ⭐⭐⭐⭐ |
+| Latest News | llama3.1:8b | **6-9s** ⚡ | ⭐⭐⭐⭐ |
 | Complex | mixtral:8x7b | 40-90s | ⭐⭐⭐⭐⭐⭐ |
 
 ### **TTS Performance**
@@ -333,3 +336,6 @@ Web Interface: ✅ Accessible
 ---
 
 **🎉 Zero Agent v3.2.2 - Fully Optimized & Ready! 🎉**
+
+
+

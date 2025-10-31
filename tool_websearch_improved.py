@@ -2,12 +2,22 @@
 Enhanced WebSearch Tool
 =======================
 Improved web search with multiple sources and stock market support
+NOW WITH PERPLEXITY AI FOR REAL-TIME SEARCH!
 """
 
 import requests
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import re
+import os
+
+# Load .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # python-dotenv not installed, using os.getenv only
+    pass
 
 
 class EnhancedWebSearchTool:
@@ -22,6 +32,15 @@ class EnhancedWebSearchTool:
     def __init__(self):
         self.cache = {}
         self.cache_timeout = 300  # 5 minutes
+        
+        # Perplexity API (if available)
+        self.perplexity_key = os.getenv('PERPLEXITY_API_KEY')
+        self.use_perplexity = bool(self.perplexity_key)
+        
+        if self.use_perplexity:
+            print("[WebSearch] [OK] Perplexity AI enabled - real-time search active!")
+        else:
+            print("[WebSearch] Using DuckDuckGo (set PERPLEXITY_API_KEY for real-time AI search)")
         
     def search_stock(self, symbol: str) -> Dict[str, Any]:
         """
@@ -260,15 +279,74 @@ class EnhancedWebSearchTool:
         except Exception:
             return []
     
-    def smart_search(self, query: str, max_results: int = 5) -> Dict[str, Any]:
+    def search_perplexity(self, query: str) -> Dict[str, Any]:
+        """
+        Search using Perplexity AI - REAL-TIME with citations!
+        
+        Args:
+            query: Search query
+            
+        Returns:
+            AI-powered answer with citations
+        """
+        if not self.use_perplexity:
+            return {'success': False, 'error': 'Perplexity API key not configured'}
+        
+        try:
+            url = "https://api.perplexity.ai/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.perplexity_key}",
+                "Content-Type": "application/json"
+            }
+            # Perplexity API - simplified format
+            # Optimize for concise, factual answers with real-time data
+            payload = {
+                "model": "sonar",  # Real-time model (simplest name)
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a factual assistant. Provide concise, accurate answers with specific details (dates, numbers, facts). Focus on current, real-time information. Be direct and brief."
+                    },
+                    {"role": "user", "content": query}
+                ],
+                "temperature": 0.2,  # Lower temperature for more factual responses
+                "max_tokens": 800  # Limit to prevent overly long answers
+            }
+            
+            response = requests.post(url, json=payload, headers=headers, timeout=20)
+            response.raise_for_status()
+            
+            data = response.json()
+            answer = data['choices'][0]['message']['content']
+            citations = data.get('citations', [])
+            
+            return {
+                'success': True,
+                'source': 'Perplexity AI',
+                'query': query,
+                'answer': answer,
+                'citations': citations,
+                'num_citations': len(citations),
+                'timestamp': datetime.now().isoformat(),
+                'type': 'ai_answer'
+            }
+            
+        except Exception as e:
+            print(f"[Perplexity] Error: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def smart_search(self, query: str, max_results: int = 5, prefer_ai: bool = True) -> Dict[str, Any]:
         """
         Smart search - automatically detects query type
-        - Stock symbols (SPY, AAPL, etc.)
-        - Regular web search
+        - Stock symbols (SPY, AAPL, etc.) - Perplexity FIRST for real-time analysis
+        - Stock price only - Yahoo Finance
+        - Perplexity AI for real-time answers (if available)
+        - Regular web search (fallback)
         
         Args:
             query: Search query
             max_results: Max results
+            prefer_ai: Use Perplexity AI if available (default: True)
             
         Returns:
             Appropriate search results
@@ -285,38 +363,110 @@ class EnhancedWebSearchTool:
         # Extract uppercase words (potential stock symbols)
         uppercase_words = re.findall(r'\b[A-Z]{2,5}\b', query)
         
-        # If we find a known stock symbol, use stock search
-        for word in uppercase_words:
-            if word.upper() in known_stocks or has_stock_keyword:
-                stock_data = self.search_stock(word.upper())
-                if stock_data.get("success"):
-                    return stock_data
+        # PRIORITY 1: For stock symbols with analysis/context keywords - use Perplexity FIRST
+        # This gives real-time data instead of halluciating
+        analysis_keywords = ['analysis', 'analyze', 'news', 'latest', 'trend', 'outlook',
+                            'performance', 'target', 'rating', 'forecast', 'prediction',
+                            'review', 'research', 'report', 'update', 'developments']
         
-        # If query has stock keywords but no uppercase, try to extract from end of query
-        if has_stock_keyword:
-            words = query.split()
-            for word in reversed(words):
-                # Try last uppercase-like words
-                if len(word) >= 2 and len(word) <= 5:
-                    stock_data = self.search_stock(word.upper())
-                    if stock_data.get("success"):
+        if any(word.upper() in known_stocks for word in uppercase_words):
+            has_analysis = any(kw in query.lower() for kw in analysis_keywords)
+            
+            # For analysis/context queries - Perplexity FIRST (real-time data)
+            if has_analysis and prefer_ai and self.use_perplexity:
+                print(f"[WebSearch] Stock analysis query detected - using Perplexity for real-time data")
+                perp_result = self.search_perplexity(query)
+                if perp_result.get('success'):
+                    return perp_result
+            
+            # For simple price-only queries - Yahoo Finance is fine
+            if not has_analysis:
+                stock_symbol = next((w for w in uppercase_words if w.upper() in known_stocks), None)
+                if stock_symbol:
+                    stock_data = self.search_stock(stock_symbol.upper())
+                    if stock_data.get("success") and stock_data.get("price", 0) > 0:
                         return stock_data
+                
+                # If Yahoo Finance failed, fallback to Perplexity
+                if prefer_ai and self.use_perplexity:
+                    print(f"[WebSearch] Yahoo Finance failed, using Perplexity")
+                    perp_result = self.search_perplexity(query)
+                    if perp_result.get('success'):
+                        return perp_result
         
-        # Regular web search
+        # PRIORITY 2: Check if we should use Perplexity AI for better real-time results
+        if prefer_ai and self.use_perplexity:
+            # Keywords that benefit from AI search (including stock analysis)
+            ai_keywords = ['latest', 'recent', 'news', 'current', 'today', 'who is', 
+                          'what is', 'explain', 'how does', 'why', 'compare',
+                          'stock', 'price', 'analysis', 'market', 'trading', 'chart',
+                          'trend', 'forecast', 'prediction', 'outlook', 'review']
+            
+            if any(kw in query.lower() for kw in ai_keywords):
+                perp_result = self.search_perplexity(query)
+                if perp_result.get('success'):
+                    return perp_result
+        
+        # FALLBACK: Regular web search
         return self.search_web(query, max_results)
     
-    def format_results(self, search_result: Dict[str, Any]) -> str:
+    def format_results(self, search_result: Dict[str, Any], max_length: int = 800) -> str:
         """
         Format search results as readable text
         
         Args:
             search_result: Result from smart_search
+            max_length: Maximum length for answer (to prevent too long responses)
             
         Returns:
             Formatted string
         """
         if not search_result.get("success"):
             return f"חיפוש נכשל: {search_result.get('error', 'שגיאה לא ידועה')}"
+        
+        # Perplexity AI result (NEW!)
+        if search_result.get("type") == "ai_answer":
+            answer = search_result['answer']
+            
+            # Limit answer length to prevent overly long responses
+            if len(answer) > max_length:
+                # Truncate at sentence boundary (more aggressive)
+                truncated = answer[:max_length]
+                
+                # Try to find a good breaking point
+                break_points = [
+                    truncated.rfind('. '),  # End of sentence
+                    truncated.rfind('.\n'),  # End of sentence with newline
+                    truncated.rfind('? '),   # Question mark
+                    truncated.rfind('! '),   # Exclamation
+                    truncated.rfind('\n'),  # Newline
+                    truncated.rfind('.')     # Any period
+                ]
+                
+                # Find the best break point
+                best_break = -1
+                for bp in break_points:
+                    if bp > max_length * 0.7:  # At least 70% of max_length
+                        best_break = max(best_break, bp)
+                
+                if best_break > 0:
+                    answer = truncated[:best_break + 1] + "..."
+                else:
+                    # Fallback: just truncate
+                    answer = truncated[:max_length - 3] + "..."
+            
+            # Add citations inline to save space
+            if search_result.get('citations'):
+                citations = search_result['citations'][:2]  # Only top 2
+                if citations:
+                    answer += " " + " | ".join([f"[{i+1}]({cite})" if 'http' in str(cite) else str(cite)
+                                                for i, cite in enumerate(citations)])
+            
+            # Ensure total length doesn't exceed max_length (including citations)
+            if len(answer) > max_length:
+                answer = answer[:max_length-3] + "..."
+            
+            return answer.strip()  # Clean output
         
         # Stock result
         if search_result.get("type") == "stock":

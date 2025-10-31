@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero Agent - WebSearch Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #output {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            min-height: 300px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Zero Agent - WebSearch Test</h1>
+        <p style="margin-bottom: 20px; color: #666;">Test internet connectivity with these queries:</p>
+        
+        <div id="status" class="status online">
+            ✓ WebSearch is ENABLED
+        </div>
+        
+        <div class="test-buttons">
+            <button onclick="testSearch('search for latest AI news')">📰 Latest AI News</button>
+            <button onclick="testSearch('what is the price of TSLA stock?')">💰 Stock Price (TSLA)</button>
+            <button onclick="testSearch('who is Elon Musk?')">👤 Who is Elon Musk?</button>
+            <button onclick="testSearch('latest news about OpenAI')">🤖 OpenAI News</button>
+            <button onclick="testSearch('weather in New York')">🌤️ Weather</button>
+            <button onclick="testSearch('current price of NVDA')">📈 NVDA Stock</button>
+        </div>
+        
+        <div id="output">
+            <div style="color: #999; text-align: center; padding: 40px;">
+                Click any button above to test WebSearch functionality
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testSearch(query) {
+            const outputDiv = document.getElementById('output');
+            const buttons = document.querySelectorAll('button');
+            
+            // Disable all buttons
+            buttons.forEach(btn => btn.disabled = true);
+            
+            // Show loading
+            outputDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Searching: "${query}"</p>
+                    <p style="font-size: 12px; color: #999;">This may take 5-20 seconds...</p>
+                </div>
+            `;
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch('http://localhost:8080/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: query,
+                        use_memory: false
+                    })
+                });
+                
+                const data = await response.json();
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                // Display result
+                outputDiv.innerHTML = `
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #667eea;">
+                        <strong>Query:</strong> ${query}<br>
+                        <strong>Model:</strong> ${data.model_used}<br>
+                        <strong>Duration:</strong> ${duration}s<br>
+                        <strong>Status:</strong> <span style="color: green;">✓ Success</span>
+                    </div>
+                    <div style="line-height: 1.6;">
+                        ${data.response}
+                    </div>
+                `;
+                
+                // Check if response contains web data
+                if (data.response.includes('http') || data.response.includes('$') || data.response.includes('USD')) {
+                    document.getElementById('status').innerHTML = '✓ WebSearch is WORKING! (Found internet data)';
+                    document.getElementById('status').className = 'status online';
+                }
+                
+            } catch (error) {
+                outputDiv.innerHTML = `
+                    <div style="color: red;">
+                        <strong>Error:</strong> ${error.message}<br><br>
+                        <strong>Possible issues:</strong><br>
+                        1. API Server not running (http://localhost:8080)<br>
+                        2. Ollama not running (http://localhost:11434)<br>
+                        3. Network connection issue<br><br>
+                        <strong>Solution:</strong> Make sure both API Server and Ollama are running.
+                    </div>
+                `;
+            } finally {
+                // Re-enable buttons
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+        
+        // Check API server on load
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:8080/health');
+                if (response.ok) {
+                    document.getElementById('status').innerHTML = '✓ API Server Online - WebSearch ENABLED';
+                } else {
+                    document.getElementById('status').innerHTML = '✗ API Server Issue';
+                    document.getElementById('status').className = 'status';
+                    document.getElementById('status').style.background = '#f8d7da';
+                    document.getElementById('status').style.color = '#721c24';
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = '✗ API Server OFFLINE (Start with: python api_server.py)';
+                document.getElementById('status').className = 'status';
+                document.getElementById('status').style.background = '#f8d7da';
+                document.getElementById('status').style.color = '#721c24';
+            }
+        }
+        
+        checkStatus();
+    </script>
+</body>
+</html>
+

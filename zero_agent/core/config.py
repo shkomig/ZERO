@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # API Keys
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
     openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+    perplexity_api_key: Optional[str] = Field(default=None, env="PERPLEXITY_API_KEY")
     
     # Ollama
     ollama_host: str = Field(default="http://localhost:11434", env="OLLAMA_HOST")
@@ -67,6 +68,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"  # Allow extra fields in .env file
 
 
 class ConfigManager:

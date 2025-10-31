@@ -472,71 +472,156 @@
             if (buffer) chunks.push(buffer.trim());
             if (chunks.length === 0) chunks.push(cleaned);
 
-            // Play chunks sequentially with improved flow
-            for (let i = 0; i < chunks.length; i++) {
-                if (!ttsEnabled) break;
-                const part = chunks[i];
-                try {
-                    console.log('🔊 TTS chunk', i + 1, 'of', chunks.length, ':', part.substring(0, 50) + '...');
-
-                    // Add small pause between chunks for better flow
-                    if (i > 0) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    }
-
-                    const resp = await fetch(`${API_URL}/api/tts?text=${encodeURIComponent(part)}&voice=male`);
-                    if (!resp.ok) {
-                        console.warn('TTS service unavailable');
-                        break;
-                    }
-
-                    const blob = await resp.blob();
-                    const url = URL.createObjectURL(blob);
-
-                    if (currentAudio) {
-                        currentAudio.pause();
-                        currentAudio = null;
-                    }
-
-                    currentAudio = new Audio(url);
-                    currentAudio.messageId = messageId;
-                    isSpeaking = true;
-
-                    const stopTtsBtn = document.getElementById('stopTtsBtn');
-                    if (stopTtsBtn) stopTtsBtn.classList.add('active');
-
-                    if (messageId) {
-                        const messageDiv = document.getElementById(messageId);
-                        if (messageDiv) {
-                            const header = messageDiv.querySelector('.message-header');
-                            if (header && !header.querySelector('.speaker-indicator')) {
-                                const indicator = document.createElement('span');
-                                indicator.className = 'speaker-indicator active';
-                                indicator.textContent = '🔊 מדבר';
-                                header.appendChild(indicator);
-                            }
+            // Check if browser TTS is available (more reliable than external service)
+            const useBrowserTTS = 'speechSynthesis' in window;
+            
+            if (useBrowserTTS) {
+                // Use Browser Speech Synthesis API (built-in, English only, but reliable)
+                console.log('🔊 Using Browser Speech Synthesis API');
+                
+                // Load voices if not already loaded
+                let voices = speechSynthesis.getVoices();
+                if (voices.length === 0) {
+                    // Wait for voices to load
+                    await new Promise(resolve => {
+                        speechSynthesis.onvoiceschanged = resolve;
+                        setTimeout(resolve, 100); // Fallback timeout
+                    });
+                    voices = speechSynthesis.getVoices();
+                }
+                
+                const utterance = new SpeechSynthesisUtterance(cleaned);
+                utterance.lang = 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.9; // Slightly lower pitch for male-like voice
+                utterance.volume = 1.0;
+                
+                // Try to find a male-sounding voice
+                const maleVoice = voices.find(v => 
+                    v.lang.startsWith('en') && 
+                    (v.name.toLowerCase().includes('male') || 
+                     v.name.toLowerCase().includes('david') ||
+                     v.name.toLowerCase().includes('daniel') ||
+                     v.name.toLowerCase().includes('james') ||
+                     v.name.toLowerCase().includes('mark'))
+                ) || voices.find(v => v.lang.startsWith('en-US') && v.localService) 
+                  || voices.find(v => v.lang.startsWith('en'));
+                
+                if (maleVoice) {
+                    utterance.voice = maleVoice;
+                    console.log('🔊 Using voice:', maleVoice.name);
+                } else {
+                    console.log('🔊 Using default English voice');
+                }
+                
+                isSpeaking = true;
+                const stopTtsBtn = document.getElementById('stopTtsBtn');
+                if (stopTtsBtn) stopTtsBtn.classList.add('active');
+                
+                if (messageId) {
+                    const messageDiv = document.getElementById(messageId);
+                    if (messageDiv) {
+                        const header = messageDiv.querySelector('.message-header');
+                        if (header && !header.querySelector('.speaker-indicator')) {
+                            const indicator = document.createElement('span');
+                            indicator.className = 'speaker-indicator active';
+                            indicator.textContent = '🔊 מדבר';
+                            header.appendChild(indicator);
                         }
                     }
+                }
+                
+                await new Promise((resolve) => {
+                    utterance.onend = () => {
+                        isSpeaking = false;
+                        const stopTtsBtn = document.getElementById('stopTtsBtn');
+                        if (stopTtsBtn) stopTtsBtn.classList.remove('active');
+                        if (messageId) {
+                            const messageDiv = document.getElementById(messageId);
+                            if (messageDiv) {
+                                const indicator = messageDiv.querySelector('.speaker-indicator');
+                                if (indicator) indicator.remove();
+                            }
+                        }
+                        resolve();
+                    };
+                    utterance.onerror = (e) => {
+                        console.error('Speech synthesis error:', e);
+                        resolve();
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                });
+            } else {
+                // Fallback to TTS service API
+                console.log('🔊 Using TTS Service API (fallback)');
+                
+                // Play chunks sequentially with improved flow
+                for (let i = 0; i < chunks.length; i++) {
+                    if (!ttsEnabled) break;
+                    const part = chunks[i];
+                    try {
+                        console.log('🔊 TTS chunk', i + 1, 'of', chunks.length, ':', part.substring(0, 50) + '...');
 
-                    await new Promise((resolve, reject) => {
-                        currentAudio.onended = () => {
-                            URL.revokeObjectURL(url);
-                            resolve();
-                        };
-                        currentAudio.onerror = (e) => {
-                            console.error('Audio playback error:', e);
-                            URL.revokeObjectURL(url);
-                            resolve();
-                        };
-                        currentAudio.play().catch((e) => {
-                            console.error('Play failed:', e);
-                            URL.revokeObjectURL(url);
-                            resolve();
+                        // Add small pause between chunks for better flow
+                        if (i > 0) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+
+                        const resp = await fetch(`${API_URL}/api/tts?text=${encodeURIComponent(part)}&voice=male`);
+                        if (!resp.ok) {
+                            console.warn('TTS service unavailable');
+                            break;
+                        }
+
+                        const blob = await resp.blob();
+                        const url = URL.createObjectURL(blob);
+
+                        if (currentAudio) {
+                            currentAudio.pause();
+                            currentAudio = null;
+                        }
+
+                        currentAudio = new Audio(url);
+                        currentAudio.messageId = messageId;
+                        isSpeaking = true;
+
+                        const stopTtsBtn = document.getElementById('stopTtsBtn');
+                        if (stopTtsBtn) stopTtsBtn.classList.add('active');
+
+                        if (messageId) {
+                            const messageDiv = document.getElementById(messageId);
+                            if (messageDiv) {
+                                const header = messageDiv.querySelector('.message-header');
+                                if (header && !header.querySelector('.speaker-indicator')) {
+                                    const indicator = document.createElement('span');
+                                    indicator.className = 'speaker-indicator active';
+                                    indicator.textContent = '🔊 מדבר';
+                                    header.appendChild(indicator);
+                                }
+                            }
+                        }
+
+                        await new Promise((resolve, reject) => {
+                            currentAudio.onended = () => {
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            };
+                            currentAudio.onerror = (e) => {
+                                console.error('Audio playback error:', e);
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            };
+                            currentAudio.play().catch((e) => {
+                                console.error('Play failed:', e);
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            });
                         });
-                    });
-                } catch (e) {
-                    console.warn('TTS error:', e);
-                    break;
+                    } catch (e) {
+                        console.warn('TTS error:', e);
+                        break;
+                    }
                 }
             }
 
@@ -563,23 +648,31 @@
         }
         
         function stopTTS() {
+            // Stop browser Speech Synthesis API
+            if ('speechSynthesis' in window && speechSynthesis.speaking) {
+                console.log('⏸️ Stopping Browser Speech Synthesis');
+                speechSynthesis.cancel();
+            }
+            
+            // Stop audio playback
             if (currentAudio) {
-                console.log('⏸️ Stopping TTS');
+                console.log('⏸️ Stopping Audio TTS');
                 currentAudio.pause();
                 currentAudio = null;
-                isSpeaking = false;
-                
-                // Hide stop button
-                const stopTtsBtn = document.getElementById('stopTtsBtn');
-                if (stopTtsBtn) {
-                    stopTtsBtn.classList.remove('active');
-                }
-                
-                // Remove all speaker indicators
-                document.querySelectorAll('.speaker-indicator').forEach(indicator => {
-                    indicator.remove();
-                });
             }
+            
+            isSpeaking = false;
+            
+            // Hide stop button
+            const stopTtsBtn = document.getElementById('stopTtsBtn');
+            if (stopTtsBtn) {
+                stopTtsBtn.classList.remove('active');
+            }
+            
+            // Remove all speaker indicators
+            document.querySelectorAll('.speaker-indicator').forEach(indicator => {
+                indicator.remove();
+            });
         }
 
         function toggleTTS() {
@@ -929,6 +1022,8 @@
         // Voice Input Support
         let recognition = null;
         let isRecording = false;
+        let recordingTimeout = null;
+        let lastTranscriptUpdate = null;
 
         function initVoiceRecognition() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -957,6 +1052,15 @@
             document.getElementById('chatInput').value = fullTranscript;
             console.log('🎤 Transcript:', fullTranscript);
             
+            // Update last transcript update time
+            lastTranscriptUpdate = Date.now();
+            
+            // Clear existing timeout
+            if (recordingTimeout) {
+                clearTimeout(recordingTimeout);
+                recordingTimeout = null;
+            }
+            
             // Detect language from the transcript and update settings
             if (finalTranscript.trim()) {
                 const detectedLang = detectLanguageFromText(finalTranscript);
@@ -970,9 +1074,19 @@
             // Auto-send when we have a complete sentence (ends with period, question mark, or exclamation)
             if (finalTranscript.trim() && /[.!?]$/.test(finalTranscript.trim())) {
                 console.log('🎤 Auto-sending complete sentence');
+                if (recordingTimeout) clearTimeout(recordingTimeout);
                 setTimeout(() => {
                     sendMessage();
                 }, 500); // Small delay to ensure transcription is complete
+            } else if (fullTranscript.trim().length >= 3) {
+                // Set timeout to auto-send after 3 seconds of silence (even without punctuation)
+                recordingTimeout = setTimeout(() => {
+                    const currentText = document.getElementById('chatInput').value.trim();
+                    if (currentText && currentText.length >= 3 && isRecording) {
+                        console.log('🎤 Auto-sending after 3s silence (no punctuation)');
+                        stopRecording(true); // This will trigger auto-send
+                    }
+                }, 3000); // 3 seconds of silence
             }
         };
 
@@ -1185,21 +1299,40 @@
                 document.getElementById('micBtn').classList.remove('recording');
                 document.getElementById('chatInput').placeholder = 'שאל אותי משהו...';
                 
+                // Clear any pending timeout
+                if (recordingTimeout) {
+                    clearTimeout(recordingTimeout);
+                    recordingTimeout = null;
+                }
+                
                 if (recognition) {
                     recognition.stop();
                 } else if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
                 }
                 
-                // Auto-send after stopping recording
+                // Auto-send after stopping recording with retry mechanism
                 if (autoSend) {
-                    setTimeout(() => {
+                    let retryCount = 0;
+                    const maxRetries = 5;
+                    const retryDelay = 300; // 300ms between retries
+                    
+                    const tryAutoSend = () => {
                         const inputText = document.getElementById('chatInput').value.trim();
-                        if (inputText) {
+                        if (inputText && inputText.length >= 2) {
                             console.log('📤 Auto-sending message after recording:', inputText);
                             sendMessage();
+                        } else if (retryCount < maxRetries) {
+                            retryCount++;
+                            console.log(`🔄 Retry ${retryCount}/${maxRetries} - waiting for transcript...`);
+                            setTimeout(tryAutoSend, retryDelay);
+                        } else {
+                            console.log('⚠️ No transcript available after stopping recording');
                         }
-                    }, 500); // Small delay to ensure text is set
+                    };
+                    
+                    // Start first attempt after 500ms
+                    setTimeout(tryAutoSend, 500);
                 }
             }
         }

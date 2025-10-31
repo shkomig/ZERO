@@ -68,12 +68,20 @@ except:
 try:
     from tool_websearch_improved import EnhancedWebSearchTool
     WEBSEARCH_AVAILABLE = True
+    # Check if Perplexity is enabled
+    try:
+        tool = EnhancedWebSearchTool()
+        print("[API] OK WebSearch available")
+    except Exception as e:
+        print(f"[API] WARNING WebSearch tool error: {e}")
 except:
     try:
         from tool_websearch import WebSearchTool
         WEBSEARCH_AVAILABLE = True
+        print("[API] OK WebSearch available (basic)")
     except:
         WEBSEARCH_AVAILABLE = False
+        print("[API] WARNING WebSearch not available")
 
 # Import memory
 try:
@@ -82,6 +90,17 @@ try:
     MEMORY_AVAILABLE = True
 except:
     MEMORY_AVAILABLE = False
+
+# Import user preferences manager
+try:
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(__file__))
+    from zero_agent.rag.memory import RAGMemorySystem
+    PREFERENCES_AVAILABLE = True
+except:
+    PREFERENCES_AVAILABLE = False
+    print("[API] WARNING User Preferences unavailable")
 
 # Import code executor
 try:
@@ -310,6 +329,7 @@ class ZeroAgent:
         self.code_executor = None
         self.agent_orchestrator = None
         self.safety_layer = None
+        self.preferences_manager = None
         self.initialized = False
     
     def initialize(self):
@@ -352,9 +372,14 @@ class ZeroAgent:
             from zero_agent.rag.memory import RAGMemorySystem
             self.rag = RAGMemorySystem()
             print("[API] OK RAG System ready (Embedded ChromaDB)")
+            
+            # Use RAG system as preferences manager
+            self.preferences_manager = self.rag
+            print("[API] OK Preferences Manager ready")
         except Exception as e:
             print(f"[API] WARNING RAG unavailable: {e}")
             self.rag = None
+            self.preferences_manager = None
         
         # Initialize Learning System (Phase 3: Behavior Learning)
         try:
@@ -643,7 +668,7 @@ async def text_to_speech(text: str, voice: str | None = None):
         if voice:
             params["voice"] = voice
         tts_url = f"http://localhost:9033/tts?{urllib.parse.urlencode(params)}"
-        response = requests.get(tts_url, timeout=30)
+        response = requests.get(tts_url, timeout=15)  # Reduced from 30s for faster response
         
         if response.status_code == 200:
             # Preserve downstream content-type (mp3/wav)
@@ -783,12 +808,31 @@ async def chat(request: ChatRequest, http_request: Request):
                     
                     # Set 10-second timeout for search (as per guide recommendation)
                     try:
-                        search_result = search_tool.smart_search(search_query)
+                        # Use prefer_ai=True for Perplexity when available
+                        search_result = search_tool.smart_search(search_query, prefer_ai=True)
+                        result_type = search_result.get("type", "unknown")
+                        
+                        print(f"[WebSearch] DEBUG - search_result type: {result_type}")
+                        
+                        # For Perplexity AI answers - return directly without LLM processing!
+                        if result_type == "ai_answer":
+                            # Much shorter format for concise answers (max 400 chars)
+                            formatted_result = search_tool.format_results(search_result, max_length=400)
+                            
+                            print(f"[WebSearch] Perplexity AI answer ({len(formatted_result)} chars) - returning directly")
+                            
+                            # Return Perplexity answer directly - no LLM processing needed!
+                            return ChatResponse(
+                                response=formatted_result.strip(),  # Remove extra whitespace
+                                model_used="perplexity-ai",
+                                duration=time.time() - start_time
+                            )
+                        
+                        # For other search types (web, stock) - format and continue to LLM
                         formatted_result = search_tool.format_results(search_result)
                         search_results = f"\n\nחיפוש עדכני ברשת:\n{formatted_result}\n"
                         
                         # Log success (avoid Unicode errors by not printing content)
-                        result_type = search_result.get("type", "unknown")
                         if result_type == "stock":
                             symbol = search_result.get("symbol", "?")
                             price = search_result.get("price", "?")
@@ -1011,28 +1055,44 @@ async def chat(request: ChatRequest, http_request: Request):
         
         is_memory_command = any(kw in request.message.lower() for kw in memory_command_keywords)
         
-        if is_memory_command and zero.memory:
-            # Handle memory commands directly
-            if any(kw in request.message.lower() for kw in ['מה אתה זוכר', 'מה אתה יודע', 'מה למדת', 'what do you remember', 'what do you know']):
-                # Show what Zero knows
-                prefs = zero.memory.short_term.get_all_preferences()
-                stats = zero.memory.short_term.get_statistics()
-                
-                response = "אני זוכר:\n\n"
-                if prefs:
-                    response += "העדפות שלך:\n"
-                    for key, val in prefs.items():
-                        response += f"  • {key}: {val}\n"
-                    response += "\n"
-                
-                response += f"דיברנו ביחד {stats['conversations_24h']} פעמים היום\n"
-                response += f"סה\"כ {stats['total_conversations']} שיחות בזיכרון\n"
-                
-                return ChatResponse(
-                    response=response,
-                    model_used="memory_command",
-                    duration=time.time() - start_time
-                )
+        # Handle "what do you remember" commands
+        if is_memory_command and any(kw in request.message.lower() for kw in ['מה אתה זוכר', 'מה אתה יודע', 'מה למדת', 'what do you remember', 'what do you know']):
+            response = "אני זוכר:\n\n"
+            stats_loaded = False
+            
+            # Check RAG memory statistics
+            if zero.preferences_manager:
+                try:
+                    stats = zero.preferences_manager.get_stats()
+                    stats_loaded = True
+                    response += f"• {stats.get('conversations', 0)} שיחות קודמות\n"
+                    response += f"• {stats.get('preferences', 0)} העדפות שמורות\n"
+                    response += f"• {stats.get('personal_facts', 0)} עובדות אישיות\n"
+                    response += f"• {stats.get('knowledge', 0)} עובדות נוספות\n"
+                except:
+                    pass
+            
+            # Fallback to old memory system if available
+            if not stats_loaded and zero.memory:
+                try:
+                    prefs = zero.memory.short_term.get_all_preferences()
+                    mem_stats = zero.memory.short_term.get_statistics()
+                    
+                    if prefs:
+                        response += "העדפות שלך:\n"
+                        for key, val in prefs.items():
+                            response += f"  • {key}: {val}\n"
+                    
+                    response += f"\nדיברנו ביחד {mem_stats['conversations_24h']} פעמים היום\n"
+                    response += f"סה\"כ {mem_stats['total_conversations']} שיחות בזיכרון\n"
+                except:
+                    pass
+            
+            return ChatResponse(
+                response=response,
+                model_used="memory_command",
+                duration=time.time() - start_time
+            )
         
         # Add RAG context for complex questions (Phase 3)
         rag_context = ""

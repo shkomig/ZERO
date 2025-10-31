@@ -1,0 +1,59 @@
+========================================
+   איך להוסיף את ה-API Key שלך
+========================================
+
+שלב 1: צור קובץ .env
+-----------------------
+בתיקיית הפרויקט (C:\AI-ALL-PRO\ZERO\), צור קובץ טקסט חדש בשם:
+  .env
+
+(כן, הקובץ מתחיל בנקודה! אין לו סיומת!)
+
+
+שלב 2: הוסף את המפתח
+-----------------------
+פתח את .env ב-Notepad והדבק בדיוק את זה:
+
+PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+↑ החלף את ה-xxxxxx עם המפתח האמיתי שלך!
+
+
+דוגמה:
+-------
+אם המפתח שלך הוא: pplx-abc123def456
+
+אז הקובץ .env צריך להכיל:
+PERPLEXITY_API_KEY=pplx-abc123def456
+
+
+שלב 3: בדוק
+-------------
+הפעל:
+  python quick_test_perplexity.py
+
+אמור לראות:
+  ✓ .env exists
+  ✓ PERPLEXITY_API_KEY found in .env
+  ✓ Loaded: pplx-xxxxx...xxx
+  ✓ Perplexity API is working!
+
+
+שלב 4: הפעל מחדש API Server
+------------------------------
+Stop את API Server הנוכחי (Ctrl+C)
+
+הפעל מחדש:
+  python api_server.py
+
+חפש את השורה:
+  [WebSearch] ✓ Perplexity AI enabled - real-time search active!
+
+
+זהו! עכשיו אתה מקבל תשובות בזמן אמת עם מקורות! 🚀
+
+
+========================================
+בעיות? רוץ את: python quick_test_perplexity.py
+========================================
+

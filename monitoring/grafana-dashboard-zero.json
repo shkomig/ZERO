@@ -1,0 +1,63 @@
+{
+  "title": "Zero Agent - API Metrics",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Requests / min",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(increase(requests_total[1m]))",
+          "legendFormat": "all"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (5m)",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(increase(requests_total{status!='200'}[5m])) / sum(increase(requests_total[5m]))",
+          "legendFormat": "error_rate"
+        }
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "auto"}
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p50/p95 (/api/chat)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"expr": "histogram_quantile(0.5, sum(rate(request_duration_seconds_bucket{path='/api/chat'}[1m])) by (le))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum(rate(request_duration_seconds_bucket{path='/api/chat'}[1m])) by (le))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p50/p95 (/api/chat/auto)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [
+        {"expr": "histogram_quantile(0.5, sum(rate(request_duration_seconds_bucket{path='/api/chat/auto'}[1m])) by (le))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, sum(rate(request_duration_seconds_bucket{path='/api/chat/auto'}[1m])) by (le))", "legendFormat": "p95"}
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Requests by route (1m)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {"expr": "sum(increase(requests_total[1m])) by (path, status)", "legendFormat": "{{path}} {{status}}"}
+      ]
+    }
+  ]
+}
+
+
+
+
+
+

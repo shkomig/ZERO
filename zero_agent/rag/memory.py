@@ -28,6 +28,8 @@ class RAGMemorySystem:
         self.successes = self._get_or_create_collection("successes")
         self.failures = self._get_or_create_collection("failures")
         self.knowledge = self._get_or_create_collection("knowledge")
+        self.preferences = self._get_or_create_collection("preferences")
+        self.personal_facts = self._get_or_create_collection("personal_facts")
         
         print(f"[MEMORY] RAG Memory initialized at {db_path}")
     
@@ -172,6 +174,42 @@ class RAGMemorySystem:
         
         return all_results[:n_results]
     
+    def store_preference(self, key: str, value: Any):
+        """Store user preference"""
+        try:
+            if not self.preferences:
+                return
+            
+            import uuid
+            doc_id = str(uuid.uuid4())
+            
+            self.preferences.add(
+                documents=[f"{key}: {value}"],
+                metadatas=[{"key": key, "value": str(value)}],
+                ids=[doc_id]
+            )
+            print(f"[OK] Preference stored: {key}")
+        except Exception as e:
+            print(f"[WARN]  Failed to store preference: {e}")
+    
+    def store_personal_fact(self, key: str, value: Any):
+        """Store personal fact about user"""
+        try:
+            if not self.personal_facts:
+                return
+            
+            import uuid
+            doc_id = str(uuid.uuid4())
+            
+            self.personal_facts.add(
+                documents=[f"{key}: {value}"],
+                metadatas=[{"key": key, "value": str(value)}],
+                ids=[doc_id]
+            )
+            print(f"[OK] Personal fact stored: {key}")
+        except Exception as e:
+            print(f"[WARN]  Failed to store personal fact: {e}")
+    
     def get_stats(self) -> Dict[str, int]:
         """Get memory statistics"""
         try:
@@ -179,7 +217,9 @@ class RAGMemorySystem:
                 "conversations": self.conversations.count() if self.conversations else 0,
                 "successes": self.successes.count() if self.successes else 0,
                 "failures": self.failures.count() if self.failures else 0,
-                "knowledge": self.knowledge.count() if self.knowledge else 0
+                "knowledge": self.knowledge.count() if self.knowledge else 0,
+                "preferences": self.preferences.count() if self.preferences else 0,
+                "personal_facts": self.personal_facts.count() if self.personal_facts else 0
             }
         except Exception as e:
             print(f"[WARN]  Stats error: {e}")

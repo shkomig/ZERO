@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "zero-agent"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["localhost:8080"]
+
+
+
+
+
+

@@ -60,6 +60,13 @@ class ContextAwareRouter:
         "financial", "trading", "investment", "market", "economic"
     ]
     
+    # Web search keywords (prefer fast model for speed)
+    WEB_SEARCH_KEYWORDS = [
+        "search", "latest", "current", "recent", "news", "today",
+        "price", "stock", "weather", "who is", "what is the",
+        "חפש", "חדשות", "מחיר", "מזג אוויר"
+    ]
+    
     # Technical-only indicators (pure coding, no strategy)
     TECHNICAL_ONLY = [
         "syntax error", "fix bug", "implement function",
@@ -71,6 +78,9 @@ class ContextAwareRouter:
         self.llm = llm
         self.use_smart_routing = True
         self.use_context_analysis = True
+        self.route_cache = {}  # Cache for routing decisions
+        self.cache_max_size = 100
+        self.prefer_fast_for_websearch = True  # NEW: Speed optimization flag  # Max cache entries
         
     def route(self, task: str, force_model: Optional[str] = None) -> str:
         """
@@ -86,34 +96,50 @@ class ContextAwareRouter:
             return "expert"
         
         task_lower = task.lower()
+        
+        # Check cache first (for speed optimization)
+        if task_lower in self.route_cache:
+            return self.route_cache[task_lower]
 
-        if any(keyword in task_lower for keyword in self.LOGIC_KEYWORDS):
-            return "expert"
+        # Determine model
+        model = None
         
+        # PRIORITY: Web searches should use fast model for speed (5-10s vs 20+s)
+        if any(keyword in task_lower for keyword in self.WEB_SEARCH_KEYWORDS):
+            model = "fast"  # Fast model handles web search results just fine!
+        elif any(keyword in task_lower for keyword in self.LOGIC_KEYWORDS):
+            model = "expert"
         # Step 1: Quick check for obviously simple tasks
-        if self._is_simple_task(task_lower):
-            return "fast"
-        
+        elif self._is_simple_task(task_lower):
+            model = "fast"
         # Step 2: Check if it's pure technical (no strategy)
-        if self._is_pure_technical(task_lower):
-            return "coder"
-        
+        elif self._is_pure_technical(task_lower):
+            model = "coder"
         # Step 3: Context-aware analysis
-        if self.use_context_analysis:
+        elif self.use_context_analysis:
             context_score = self._analyze_context(task_lower)
             
             # High context complexity = needs deep reasoning
             if context_score > 0.6:
-                return "smart"
-            
+                model = "smart"
             # Medium complexity with code = coder
             # Medium complexity without code = balanced
             elif context_score > 0.3:
                 has_code_intent = self._has_code_intent(task_lower)
-                return "coder" if has_code_intent else "balanced"
+                model = "coder" if has_code_intent else "balanced"
         
         # Step 4: Fallback to keyword-based routing
-        return self._keyword_routing(task_lower)
+        if not model:
+            model = self._keyword_routing(task_lower)
+        
+        # Cache the result (limit cache size)
+        if len(self.route_cache) >= self.cache_max_size:
+            # Remove oldest entry (simple FIFO)
+            first_key = next(iter(self.route_cache))
+            del self.route_cache[first_key]
+        
+        self.route_cache[task_lower] = model
+        return model
     
     def _is_simple_task(self, task: str) -> bool:
         """Check if task is obviously simple"""
