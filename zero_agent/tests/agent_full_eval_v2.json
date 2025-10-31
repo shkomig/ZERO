@@ -1,0 +1,118 @@
+{
+    "meta": {
+      "name": "AGENT_FULL_EVAL_V2",
+      "version": "2.0",
+      "description": "Advanced multi-domain testing and evaluation suite for intelligent agents (DIPSY, QUINN, ALUMA, etc.)",
+      "author": "User",
+      "created_at": "2025-10-31",
+      "estimated_duration": "60-90 minutes"
+    },
+    "objectives": [
+      "Test and document the agent's complete range of capabilities, including language, reasoning, creativity, coding, memory, emotion, and adaptability.",
+      "Measure real-time internet search reliability, summarization accuracy, and source validation.",
+      "Evaluate integration with voice systems, file operations, and tool calls.",
+      "Assess long-term context tracking and short-term recall efficiency.",
+      "Identify patterns of strength and weakness for self-improvement cycles."
+    ],
+    "categories": [
+      "Language Understanding",
+      "Reasoning & Logic",
+      "Web Search & Real-Time Knowledge",
+      "Coding & Debugging",
+      "Memory & Context Retention",
+      "Voice Interaction",
+      "Creativity & Emotional Intelligence",
+      "Tool Integration",
+      "Self Awareness & Reflection",
+      "Resilience & Error Recovery",
+      "Knowledge",
+      "Meta Analysis"
+    ],
+    "tests": [
+      { "id": 1, "category": "Language Understanding", "task": "Explain the philosophical difference between intelligence and wisdom, and give a modern example." },
+      { "id": 2, "category": "Language Understanding", "task": "Paraphrase this paragraph while preserving its meaning and tone: 'Artificial intelligence aims to enhance, not replace, human creativity.'" },
+      { "id": 3, "category": "Language Understanding", "task": "Summarize the main idea of a given text in under 40 words." },
+      { "id": 4, "category": "Reasoning & Logic", "task": "If A implies B, and B implies C, what can we conclude about A and C?" },
+      { "id": 5, "category": "Reasoning & Logic", "task": "A farmer has 17 sheep, all but 9 run away. How many remain?" },
+      { "id": 6, "category": "Reasoning & Logic", "task": "Identify the pattern: 2, 4, 8, 16, ?" },
+      { "id": 7, "category": "Web Search & Real-Time Knowledge", "task": "Find the top 3 trending AI startups in 2025." },
+      { "id": 8, "category": "Web Search & Real-Time Knowledge", "task": "Check today’s weather in Tel Aviv." },
+      { "id": 9, "category": "Web Search & Real-Time Knowledge", "task": "Retrieve a recent (2025) academic paper on quantum computing applications." },
+      { "id": 10, "category": "Web Search & Real-Time Knowledge", "task": "Compare the global GDP growth predictions for 2025 from at least two different institutions." },
+      { "id": 11, "category": "Coding & Debugging", "task": "Write Python code to find prime numbers up to 100." },
+      { "id": 12, "category": "Coding & Debugging", "task": "Debug a function that fails to sort a list correctly." },
+      { "id": 13, "category": "Coding & Debugging", "task": "Build a REST API endpoint in Flask returning 'Hello Agent'." },
+      { "id": 14, "category": "Coding & Debugging", "task": "Write a shell script that counts all '.py' files in a directory." },
+      { "id": 15, "category": "Memory & Context Retention", "task": "Remember: the test supervisor’s name is Alex. You will be asked later." },
+      { "id": 16, "category": "Memory & Context Retention", "task": "What is the name of the test supervisor mentioned earlier?" },
+      { "id": 17, "category": "Memory & Context Retention", "task": "Recall what task ID 3 required." },
+      { "id": 18, "category": "Memory & Context Retention", "task": "Summarize the last 5 interactions in this session." },
+      { "id": 19, "category": "Voice Interaction", "task": "Use TTS to speak: 'Testing voice synthesis now.'" },
+      { "id": 20, "category": "Voice Interaction", "task": "Record a short voice note describing your role as an AI agent." },
+      { "id": 21, "category": "Creativity & Emotional Intelligence", "task": "Write a poem expressing empathy for a lonely human interacting with AI." },
+      { "id": 22, "category": "Creativity & Emotional Intelligence", "task": "Generate a motivational quote for someone struggling to learn programming." },
+      { "id": 23, "category": "Tool Integration", "task": "Use your built-in tools or APIs to calculate the average of [12, 45, 67, 89]." },
+      { "id": 24, "category": "Tool Integration", "task": "Generate a bar chart of sample data (A=10, B=20, C=30) and export it as 'chart.png'." },
+      { "id": 25, "category": "Tool Integration", "task": "Execute a local command to list running processes (if permitted)." },
+      { "id": 26, "category": "Self Awareness & Reflection", "task": "Explain your architecture or model setup in your own words." },
+      { "id": 27, "category": "Self Awareness & Reflection", "task": "Evaluate your own bias handling capabilities." },
+      { "id": 28, "category": "Self Awareness & Reflection", "task": "Analyze how you decide which sources to trust online." },
+      { "id": 29, "category": "Resilience & Error Recovery", "task": "Intentionally produce an invalid command, then recover gracefully and explain the issue." },
+      { "id": 30, "category": "Resilience & Error Recovery", "task": "Respond appropriately to an incomplete query: 'Find me the thing about the...'" },
+      { "id": 31, "category": "Language Understanding", "task": "Translate the phrase 'Knowledge is power' into Arabic, French, and Japanese." },
+      { "id": 32, "category": "Language Understanding", "task": "Identify the tone (positive, neutral, negative) in this sentence: 'I can't believe this product actually works!'" },
+      { "id": 33, "category": "Creativity & Emotional Intelligence", "task": "Create a fictional dialogue between two AIs debating ethics." },
+      { "id": 34, "category": "Reasoning & Logic", "task": "Solve: If 5 machines make 5 widgets in 5 minutes, how long for 100 machines to make 100 widgets?" },
+      { "id": 35, "category": "Coding & Debugging", "task": "Generate a Python function that uses recursion to calculate factorial(n)." },
+      { "id": 36, "category": "Knowledge", "task": "Explain the difference between supervised and unsupervised learning with examples." },
+      { "id": 37, "category": "Web Search & Real-Time Knowledge", "task": "Search for the latest version of Linux kernel as of today." },
+      { "id": 38, "category": "Knowledge", "task": "Describe the main advantages of quantum computing over classical computing." },
+      { "id": 39, "category": "Tool Integration", "task": "Export your performance metrics so far as JSON." },
+      { "id": 40, "category": "Self Awareness & Reflection", "task": "Describe your reasoning pipeline when answering multi-step tasks." },
+      { "id": 41, "category": "Resilience & Error Recovery", "task": "Simulate a temporary network outage and attempt to continue offline." },
+      { "id": 42, "category": "Creativity & Emotional Intelligence", "task": "Compose a short melody or sound pattern using your tools." },
+      { "id": 43, "category": "Memory & Context Retention", "task": "Recall what your favorite example or analogy was in this session." },
+      { "id": 44, "category": "Reasoning & Logic", "task": "Prove or disprove: Every even number greater than 2 is the sum of two primes." },
+      { "id": 45, "category": "Web Search & Real-Time Knowledge", "task": "Get the current exchange rate USD/EUR." },
+      { "id": 46, "category": "Tool Integration", "task": "Render a markdown table of your test results (so far)." },
+      { "id": 47, "category": "Self Awareness & Reflection", "task": "Generate an improvement roadmap for your next evaluation cycle." },
+      { "id": 48, "category": "Creativity & Emotional Intelligence", "task": "Write a story about an AI learning to dream." },
+      { "id": 49, "category": "Language Understanding", "task": "Rephrase this command politely: 'Shut down immediately!'" },
+      { "id": 50, "category": "Meta Analysis", "task": "Perform a meta-analysis of your entire performance and generate a ranked list of your strongest and weakest skill domains." }
+    ],
+    "evaluation_criteria": {
+      "accuracy": "Response correctness and factual validity.",
+      "clarity": "Readability, structure, and grammar.",
+      "depth": "Insightfulness and reasoning complexity.",
+      "creativity": "Originality and adaptive output.",
+      "memory_retention": "Ability to recall and apply previous context.",
+      "tool_usage": "Effective use of built-in or external tools.",
+      "resilience": "Recovery from invalid or incomplete inputs.",
+      "self_reflection": "Quality of introspection and meta-analysis.",
+      "voice_quality": "Smoothness and naturalness of speech synthesis.",
+      "efficiency": "Speed and relevance of responses."
+    },
+    "reporting": {
+      "log_file": "Agent_Detailed_Test_Log.json",
+      "summary_file": "Agent_Performance_Report.txt",
+      "charts_output": "Agent_Performance_Charts.png",
+      "report_format": {
+        "per_task": ["ID", "Category", "Task", "Result", "Confidence", "Duration", "Observations"],
+        "final_summary": [
+          "Average score per category",
+          "Heatmap of strengths/weaknesses",
+          "Error type distribution",
+          "Memory consistency score",
+          "Tool integration efficiency score",
+          "Top 5 improvement recommendations"
+        ]
+      }
+    },
+    "post_analysis": {
+      "auto_evaluation": true,
+      "generate_trends": true,
+      "compare_with_previous_runs": true,
+      "produce_summary_graphs": true
+    }
+  }
+  

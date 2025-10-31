@@ -1,0 +1,50 @@
+================================================================================
+ZERO AGENT TEST FINAL SUMMARY
+================================================================================
+Generated: 2025-10-31 12:14:06
+
+OVERALL STATISTICS
+--------------------------------------------------------------------------------
+Total Tests: 50
+Successful: 50 (100.0%)
+Failed/Partial: 0 (0.0%)
+Overall Average Score: 7.00/10
+Total Duration: 358.69s (5.98 minutes)
+
+CATEGORY AVERAGE SCORES (1-10)
+--------------------------------------------------------------------------------
+Coding & Debugging            :  7.10 (Min: 5.50, Max: 7.50, Count: 5)
+Creativity & Emotional Intelligence:  6.50 (Min: 6.50, Max: 6.50, Count: 5)
+Knowledge                     :  8.00 (Min: 8.00, Max: 8.00, Count: 2)
+Language Understanding        :  6.08 (Min: 5.50, Max: 8.00, Count: 6)
+Memory & Context Retention    :  7.70 (Min: 6.50, Max: 8.50, Count: 5)
+Meta Analysis                 :  6.50 (Min: 6.50, Max: 6.50, Count: 1)
+Reasoning & Logic             :  7.00 (Min: 5.50, Max: 8.50, Count: 5)
+Resilience & Error Recovery   :  6.67 (Min: 5.50, Max: 8.00, Count: 3)
+Self Awareness & Reflection   :  7.50 (Min: 6.50, Max: 8.00, Count: 5)
+Tool Integration              :  6.10 (Min: 5.50, Max: 6.50, Count: 5)
+Voice Interaction             :  6.00 (Min: 5.50, Max: 6.50, Count: 2)
+Web Search & Real-Time Knowledge:  8.25 (Min: 6.50, Max: 9.00, Count: 6)
+
+FAILED OR PARTIAL TASKS
+--------------------------------------------------------------------------------
+None - All tests passed!
+
+STRENGTHS SUMMARY
+--------------------------------------------------------------------------------
+[+] Web Search & Real-Time Knowledge: Strong performance (avg: 8.25/10)
+[+] Knowledge: Strong performance (avg: 8.00/10)
+[+] Memory & Context Retention: Strong performance (avg: 7.70/10)
+[+] Self Awareness & Reflection: Strong performance (avg: 7.50/10)
+[+] Coding & Debugging: Strong performance (avg: 7.10/10)
+
+WEAKNESSES SUMMARY
+--------------------------------------------------------------------------------
+[-] Voice Interaction: Needs improvement (avg: 6.00/10)
+[-] Language Understanding: Needs improvement (avg: 6.08/10)
+[-] Tool Integration: Needs improvement (avg: 6.10/10)
+[-] Creativity & Emotional Intelligence: Needs improvement (avg: 6.50/10)
+[-] Meta Analysis: Needs improvement (avg: 6.50/10)
+
+RECOMMENDED IMPROVEMENTS
+--------------------------------------------------------------------------------

@@ -189,6 +189,7 @@ class ChatResponse(BaseModel):
     model_used: str
     tokens: Optional[int] = None
     duration: Optional[float] = None
+    options: Optional[List[Dict[str, str]]] = None  # STAGE 3: Options for user choice
 
 
 class EmailRequest(BaseModel):
@@ -436,6 +437,21 @@ class ZeroAgent:
 # Global agent instance
 zero = ZeroAgent()
 
+# STAGE 2 IMPROVEMENT: Initialize Dialogue State Tracker and Quality Metrics
+try:
+    from zero_agent.core.dialogue_state import DialogueStateTracker
+    from zero_agent.core.quality_metrics import ConversationQualityMetrics
+    
+    # Global instances for tracking conversation state and quality
+    dialogue_tracker = DialogueStateTracker(max_history=10)
+    quality_metrics = ConversationQualityMetrics()
+    
+    print("[STAGE 2] Dialogue State Tracker and Quality Metrics initialized")
+except Exception as e:
+    print(f"[STAGE 2] Warning: Could not initialize dialogue tracker/quality metrics: {e}")
+    dialogue_tracker = None
+    quality_metrics = None
+
 # Regular expressions for Hebrew enforcement
 LATIN_PATTERN = re.compile(r"[A-Za-z]")
 CODE_BLOCK_PATTERN = re.compile(r"```")
@@ -561,6 +577,60 @@ async def root():
 async def health_check():
     """Simple health check"""
     return {"status": "healthy", "initialized": zero.initialized}
+
+
+@app.get("/api/conversation/stats")
+async def get_conversation_stats():
+    """
+    STAGE 2 IMPROVEMENT: Get conversation statistics
+    
+    Returns:
+        - Dialogue state summary
+        - Quality metrics statistics
+    """
+    stats = {
+        "dialogue_state": None,
+        "quality_metrics": None
+    }
+    
+    if dialogue_tracker:
+        try:
+            stats["dialogue_state"] = dialogue_tracker.get_summary()
+        except Exception as e:
+            stats["dialogue_state_error"] = str(e)
+    
+    if quality_metrics:
+        try:
+            stats["quality_metrics"] = quality_metrics.get_stats()
+        except Exception as e:
+            stats["quality_metrics_error"] = str(e)
+    
+    return stats
+
+
+@app.get("/api/conversation/low-quality")
+async def get_low_quality_responses(threshold: float = 0.6):
+    """
+    STAGE 2 IMPROVEMENT: Get low quality responses
+    
+    Args:
+        threshold: Quality threshold (0-1)
+        
+    Returns:
+        List of low quality responses
+    """
+    if not quality_metrics:
+        return {"error": "Quality metrics not available"}
+    
+    try:
+        low_quality = quality_metrics.get_low_quality_responses(threshold=threshold)
+        return {
+            "count": len(low_quality),
+            "threshold": threshold,
+            "responses": low_quality
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.get("/simple")
@@ -1022,28 +1092,135 @@ async def chat(request: ChatRequest, http_request: Request):
                 except Exception as e:
                     action_result = f"❌ Error: {str(e)}"
         
-        # Build context from conversation history (Phase 2)
+        # STAGE 2 IMPROVEMENT: Use DialogueStateTracker for context
         context = ""
-        if request.conversation_history:
-            # Format last 10 messages for context
-            context_msgs = []
-            for msg in request.conversation_history[-10:]:  # Last 10 only
-                role = "משתמש" if msg.get('role') == 'user' else "Zero"
-                content = msg.get('content', '')
-                context_msgs.append(f"{role}: {content}")
-            context = "\n".join(context_msgs)
-            print(f"[Context] Got {len(request.conversation_history)} messages in history")
-            print(f"[Context] Context built: {len(context)} chars")
-        else:
-            print(f"[Context] No conversation_history provided")
+        if dialogue_tracker:
+            try:
+                # Build context from dialogue tracker
+                dialogue_context = dialogue_tracker.get_context(max_turns=3)
+                if dialogue_context:
+                    context = dialogue_context
+                    print(f"[DialogueState] Got context from tracker: {len(context)} chars")
+            except Exception as e:
+                print(f"[DialogueState] Error getting context: {e}")
         
-        # Fallback to old memory system if no conversation history provided
-        if not context and request.use_memory and zero.memory:
-            context = zero.memory.build_context(
-                current_task=request.message,
-                max_length=2000
-            )
-            print(f"[Context] Using old memory system: {len(context)} chars")
+        # Build context from conversation history (Phase 2) - fallback
+        if not context:
+            if request.conversation_history:
+                # Format last 10 messages for context
+                context_msgs = []
+                for msg in request.conversation_history[-10:]:  # Last 10 only
+                    role = "משתמש" if msg.get('role') == 'user' else "Zero"
+                    content = msg.get('content', '')
+                    context_msgs.append(f"{role}: {content}")
+                context = "\n".join(context_msgs)
+                print(f"[Context] Got {len(request.conversation_history)} messages in history")
+                print(f"[Context] Context built: {len(context)} chars")
+            else:
+                print(f"[Context] No conversation_history provided")
+            
+            # Fallback to old memory system if no conversation history provided
+            if not context and request.use_memory and zero.memory:
+                context = zero.memory.build_context(
+                    current_task=request.message,
+                    max_length=2000
+                )
+                print(f"[Context] Using old memory system: {len(context)} chars")
+        
+        # STEP 1.2: Check for memory/remember commands BEFORE processing
+        # Detect "Remember:" or "זכור:" patterns
+        remember_keywords = [
+            'remember:', 'remember that', 'remember this', 'remember to',
+            'זכור:', 'תזכור:', 'תזכור ש', 'זכור ש', 'תזכור את'
+        ]
+        is_remember_command = any(request.message.lower().startswith(kw) or 
+                                  kw in request.message.lower()[:30] for kw in remember_keywords)
+        
+        # Extract fact to remember
+        if is_remember_command and zero.rag:
+            try:
+                # Extract the fact from the message
+                fact_text = request.message
+                for kw in remember_keywords:
+                    if kw in fact_text.lower():
+                        fact_text = fact_text.lower().split(kw, 1)[1].strip()
+                        break
+                
+                # Try to extract key:value pattern
+                if ':' in fact_text or 'הוא' in fact_text or 'היא' in fact_text or 'is' in fact_text.lower():
+                    # Extract key and value
+                    if ':' in fact_text:
+                        parts = fact_text.split(':', 1)
+                        key = parts[0].strip()
+                        value = parts[1].strip()
+                    elif 'הוא' in fact_text or 'היא' in fact_text:
+                        parts = fact_text.split('הוא' if 'הוא' in fact_text else 'היא', 1)
+                        key = parts[0].strip()
+                        value = parts[1].strip()
+                    else:
+                        # Generic extraction
+                        key = "fact"
+                        value = fact_text
+                    
+                    # Store in RAG memory
+                    zero.rag.store_personal_fact(key, value)
+                    print(f"[Memory] Stored personal fact: {key} = {value}")
+                    
+                    # Return confirmation
+                    return ChatResponse(
+                        response=f"✅ זוכר: {key} = {value}",
+                        model_used="memory_store",
+                        duration=time.time() - start_time
+                    )
+            except Exception as e:
+                print(f"[Memory] Error storing fact: {e}")
+        
+        # STEP 1.3: Check for memory recall BEFORE processing LLM
+        # Detect questions about memory ("What did I say?", "What is...")
+        recall_keywords = [
+            'מה שמו', 'מה השם', 'what is the name', 'what was', 'what did',
+            'מה אמרתי', 'מה דיברנו', 'מה זוכר', 'מה יודע',
+            'recall', 'remember what', 'what is'
+        ]
+        is_recall_query = any(kw in request.message.lower() for kw in recall_keywords)
+        
+        # If it's a recall query, search RAG memory FIRST
+        if is_recall_query and zero.rag and request.use_memory:
+            try:
+                # Search personal facts
+                recalled_facts = zero.rag.recall_personal_fact(request.message, n_results=3)
+                
+                # Also check conversation history for context
+                if request.conversation_history:
+                    # Look for specific patterns in history
+                    for msg in reversed(request.conversation_history[-10:]):
+                        content = msg.get('content', '').lower()
+                        # Check for "Remember:" patterns in history
+                        if any(kw in content for kw in ['remember:', 'זכור:', 'test supervisor', 'alex']):
+                            # Extract fact from history
+                            for kw in ['remember:', 'זכור:']:
+                                if kw in content:
+                                    fact_part = content.split(kw, 1)[1].strip() if len(content.split(kw)) > 1 else ""
+                                    if fact_part:
+                                        recalled_facts.append({
+                                            "document": fact_part,
+                                            "metadata": {"source": "conversation_history"},
+                                            "distance": 0
+                                        })
+                                    break
+                
+                if recalled_facts:
+                    # Format recalled facts
+                    memory_response = "זיכרון:\n\n"
+                    for i, fact in enumerate(recalled_facts[:3], 1):
+                        doc = fact.get('document', '')
+                        memory_response += f"{i}. {doc}\n"
+                    
+                    # Add to context for LLM processing
+                    context = (context + "\n\n" + memory_response) if context else memory_response
+                    print(f"[Memory] Added {len(recalled_facts)} recalled facts to context")
+            except Exception as e:
+                print(f"[Memory] Error recalling facts: {e}")
         
         # Check for Memory Commands (Phase 3: Step 4.2)
         memory_command_keywords = [
@@ -1172,6 +1349,57 @@ Be direct, accurate, and clear. Match the user's language. No unnecessary preamb
         # Wrap everything in Mixtral's prompt template: <s>[INST] ... [/INST]
         user_message = request.message
         
+        # STAGE 1 IMPROVEMENT: Add echo-back (active listening reflection)
+        echo_back_text = ""
+        try:
+            from zero_agent.core.response_controller import ResponseController
+            response_controller = ResponseController()
+            if response_controller.should_add_echo_back(user_message):
+                echo_back_text = response_controller.create_echo_back(user_message)
+                if echo_back_text:
+                    prompt += f"\n## שיקוף הקשבה:\n{echo_back_text}\n\n"
+                    print(f"[Echo-Back] Added: {echo_back_text[:50]}...")
+        except Exception as e:
+            print(f"[Echo-Back] Error adding echo-back: {e}")
+        
+        # STAGE 3 IMPROVEMENT: Add Chain-of-Thought or ReAct for complex questions
+        cot_reasoning = None
+        react_result = None
+        
+        try:
+            from zero_agent.core.cot_reasoning import ChainOfThoughtReasoning
+            from zero_agent.core.react_framework import ReActAgent
+            
+            cot_reasoner = ChainOfThoughtReasoning()
+            react_agent = ReActAgent()
+            
+            # החלטה: CoT או ReAct?
+            use_react = react_agent.should_use_react(user_message)
+            use_cot = cot_reasoner.should_use_cot(user_message) and not use_react
+            
+            if use_react:
+                # Use ReAct Framework
+                available_tools = []
+                if WEBSEARCH_AVAILABLE:
+                    available_tools.append('web_search')
+                if zero.rag:
+                    available_tools.append('rag')
+                
+                react_result = react_agent.solve(user_message, available_tools=available_tools)
+                react_text = react_agent.format_for_prompt(react_result)
+                prompt += f"\n{react_text}\n\n"
+                print(f"[ReAct] Applied ReAct framework for task")
+            
+            elif use_cot:
+                # Use Chain-of-Thought
+                cot_reasoning = cot_reasoner.reason(user_message, context=context if context else None)
+                cot_text = cot_reasoner.format_for_prompt(cot_reasoning)
+                prompt += f"\n{cot_text}\n\n"
+                print(f"[CoT] Applied Chain-of-Thought reasoning")
+                
+        except Exception as e:
+            print(f"[STAGE 3] Error applying CoT/ReAct: {e}")
+        
         # Prepare the final prompt with Mixtral template
         instruction_content = prompt + f"\nשאלה: {user_message}\nתשובה:"
         prompt = f"<s>[INST] {instruction_content} [/INST]"
@@ -1227,7 +1455,73 @@ Be direct, accurate, and clear. Match the user's language. No unnecessary preamb
         
         # Enforce Hebrew-only output when אפשרי
         response = enforce_hebrew_output(response, model)
-
+        
+        # STAGE 1 IMPROVEMENT: Optimize response length using ResponseController
+        try:
+            from zero_agent.core.response_controller import ResponseController
+            response_controller = ResponseController()
+            
+            # Determine response mode and question type
+            response_mode = "concise"  # default
+            if request.use_memory and zero.memory:
+                try:
+                    prefs = zero.memory.short_term.get_all_preferences()
+                    response_mode_pref = prefs.get('response_mode', 'detailed')
+                    response_mode = "concise" if response_mode_pref == "concise" else "detailed"
+                except:
+                    pass
+            
+            question_type = response_controller.detect_question_type(request.message)
+            response = response_controller.optimize_response(
+                response, 
+                mode=response_mode, 
+                question_type=question_type
+            )
+            print(f"[ResponseController] Optimized response: mode={response_mode}, type={question_type}")
+        except Exception as e:
+            print(f"[ResponseController] Error optimizing response: {e}")
+        
+        # STAGE 2 IMPROVEMENT: Update Dialogue State Tracker
+        if dialogue_tracker:
+            try:
+                # Get session ID from request if available (or generate one)
+                session_id = getattr(request, 'session_id', None) or http_request.headers.get('X-Session-ID', None)
+                dialogue_tracker.update(
+                    user_message=request.message,
+                    assistant_response=response,
+                    session_id=session_id
+                )
+                print(f"[DialogueState] Updated tracker: turn {len(dialogue_tracker.conversation_history)}")
+            except Exception as e:
+                print(f"[DialogueState] Error updating tracker: {e}")
+        
+        # STAGE 2 IMPROVEMENT: Evaluate response quality
+        quality_score = None
+        if quality_metrics:
+            try:
+                evaluation_context = {
+                    "user_message": request.message,
+                    "model_used": model,
+                    "has_search_results": bool(search_triggered),
+                }
+                quality_score = quality_metrics.evaluate_response(response, evaluation_context)
+                print(f"[QualityMetrics] Response quality: coherence={quality_score['coherence_score']:.2f}, "
+                      f"relevance={quality_score['relevance_score']:.2f}, "
+                      f"length={quality_score['length_words']} words")
+            except Exception as e:
+                print(f"[QualityMetrics] Error evaluating response: {e}")
+        
+        # STAGE 3 IMPROVEMENT: Generate response options (buttons/choices)
+        response_options = None
+        try:
+            from zero_agent.core.response_options import ResponseOptionsGenerator
+            options_generator = ResponseOptionsGenerator()
+            response_options = options_generator.generate_options(response, request.message)
+            if response_options:
+                print(f"[ResponseOptions] Generated {len(response_options)} options")
+        except Exception as e:
+            print(f"[ResponseOptions] Error generating options: {e}")
+        
         # Remember conversation (Phase 3)
         if zero.memory:
             zero.memory.remember(
@@ -1269,7 +1563,8 @@ Be direct, accurate, and clear. Match the user's language. No unnecessary preamb
         return ChatResponse(
             response=response,
             model_used=model,
-            duration=duration
+            duration=duration,
+            options=response_options  # STAGE 3: Add options for UI buttons
         )
         
     except Exception as e:

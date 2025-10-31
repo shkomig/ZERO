@@ -210,6 +210,55 @@ class RAGMemorySystem:
         except Exception as e:
             print(f"[WARN]  Failed to store personal fact: {e}")
     
+    def recall_personal_fact(self, query: str, n_results: int = 3) -> List[Dict]:
+        """Recall personal facts relevant to query"""
+        try:
+            if not self.personal_facts:
+                return []
+            
+            return self.retrieve(query, n_results, "personal_facts")
+        except Exception as e:
+            print(f"[WARN]  Failed to recall personal fact: {e}")
+            return []
+    
+    def get_personal_fact_by_key(self, key: str) -> Optional[str]:
+        """Get personal fact by exact key match"""
+        try:
+            if not self.personal_facts:
+                return None
+            
+            # Get all personal facts
+            count = self.personal_facts.count()
+            if count == 0:
+                return None
+            
+            # Query for the specific key
+            results = self.personal_facts.get(
+                where={"key": key},
+                limit=1
+            )
+            
+            if results and results.get('metadatas') and len(results['metadatas']) > 0:
+                return results['metadatas'][0].get('value')
+            
+            # Fallback: search by similarity
+            recall_results = self.recall_personal_fact(key, n_results=1)
+            if recall_results:
+                # Extract value from metadata or document
+                first_result = recall_results[0]
+                metadata = first_result.get('metadata', {})
+                if metadata.get('key') == key:
+                    return metadata.get('value')
+                # Try to extract from document
+                document = first_result.get('document', '')
+                if f"{key}:" in document:
+                    return document.split(f"{key}:", 1)[1].strip()
+            
+            return None
+        except Exception as e:
+            print(f"[WARN]  Failed to get personal fact by key: {e}")
+            return None
+    
     def get_stats(self) -> Dict[str, int]:
         """Get memory statistics"""
         try:

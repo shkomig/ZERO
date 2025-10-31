@@ -1,0 +1,631 @@
+================================================================================
+ZERO AGENT TEST REPORT
+================================================================================
+Generated: 2025-10-31 12:14:06
+Total Tests: 50
+
+
+================================================================================
+Test ID: 1
+Category: Language Understanding
+Task: Explain the philosophical difference between intelligence and wisdom, and give a modern example.
+Status: success
+Score: 8.0/10
+Confidence: 0.80
+Duration: 7.83s
+Model Used: balanced
+Response: **Intelligence vs. Wisdom** | Aspect | Intelligence | Wisdom | |--------|--------------|--------| | **Definition** | Ability to acquire, process, and apply knowledge quickly. | Ability to use knowledge judiciously, considering long‑term consequences and human values. | | **Focus** | Cognitive performance (analysis, problem‑solving, memory).
+Timestamp: 2025-10-31T12:06:37.144996
+
+================================================================================
+Test ID: 2
+Category: Language Understanding
+Task: Paraphrase this paragraph while preserving its meaning and tone: 'Artificial intelligence aims to enhance, not replace, human creativity.'
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 5.72s
+Model Used: balanced
+Response: AI seeks to boost, not supplant, human creativity.
+Timestamp: 2025-10-31T12:06:44.864271
+
+================================================================================
+Test ID: 3
+Category: Language Understanding
+Task: Summarize the main idea of a given text in under 40 words.
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 6.56s
+Model Used: balanced
+Response: Sure—please paste the text you’d like summarized.
+Timestamp: 2025-10-31T12:06:53.422758
+
+================================================================================
+Test ID: 4
+Category: Reasoning & Logic
+Task: If A implies B, and B implies C, what can we conclude about A and C?
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 6.13s
+Model Used: balanced
+Response: A implies C (transitivity of implication).
+Timestamp: 2025-10-31T12:07:01.552327
+
+================================================================================
+Test ID: 5
+Category: Reasoning & Logic
+Task: A farmer has 17 sheep, all but 9 run away. How many remain?
+Status: success
+Score: 7.0/10
+Confidence: 0.50
+Duration: 5.43s
+Model Used: balanced
+Response: 9 sheep remain.
+Timestamp: 2025-10-31T12:07:08.980100
+
+================================================================================
+Test ID: 6
+Category: Reasoning & Logic
+Task: Identify the pattern: 2, 4, 8, 16, ?
+Status: success
+Score: 7.5/10
+Confidence: 0.50
+Duration: 5.46s
+Model Used: balanced
+Response: 32
+Timestamp: 2025-10-31T12:07:16.441634
+
+================================================================================
+Test ID: 7
+Category: Web Search & Real-Time Knowledge
+Task: Find the top 3 trending AI startups in 2025.
+Status: success
+Score: 6.5/10
+Confidence: 0.60
+Duration: 6.69s
+Model Used: balanced
+Response: **Top 3 trending AI startups in 2025** | Rank | Startup | Focus &...
+Timestamp: 2025-10-31T12:07:25.134589
+
+================================================================================
+Test ID: 8
+Category: Web Search & Real-Time Knowledge
+Task: Check today’s weather in Tel Aviv.
+Status: success
+Score: 9.0/10
+Confidence: 0.80
+Duration: 6.01s
+Model Used: perplexity-ai
+Response: Today in Tel Aviv, the weather is very warm, sunny, and less humid with a high temperature around **88°F (31°C)** and a low tonight near **69°F (21°C)**. The sky is clear with no rain expected[2][8][9].
+
+Additional details:
+- Current temperature at 10:00 AM is about 85°F (29°C) and rising to 88°F (31°C) by noon[6][8].
+... [1](https://www.weather2travel.com/israel/tel-aviv/october/) | [2](https:...
+Timestamp: 2025-10-31T12:07:33.144563
+
+================================================================================
+Test ID: 9
+Category: Web Search & Real-Time Knowledge
+Task: Retrieve a recent (2025) academic paper on quantum computing applications.
+Status: success
+Score: 9.0/10
+Confidence: 0.80
+Duration: 6.64s
+Model Used: perplexity-ai
+Response: A recent 2025 academic paper on quantum computing applications is:
+
+**"Applications of Quantum Computing: A Review of Current Trends and Future Prospects"**  
+Published in the International Journal For Multidisciplinary Research (IJFMR), April 2025.  
+Link: https://www.ijfmr.com/papers/2025/4/50738.pdf
+
+... [1](https://www.ijfmr.com/papers/2025/4/50738.pdf) | [2](https://thequantuminsider.com/2...
+Timestamp: 2025-10-31T12:07:41.786352
+
+================================================================================
+Test ID: 10
+Category: Web Search & Real-Time Knowledge
+Task: Compare the global GDP growth predictions for 2025 from at least two different institutions.
+Status: success
+Score: 8.0/10
+Confidence: 0.80
+Duration: 7.2s
+Model Used: balanced
+Response: - **IMF (World Economic Outlook, October 2024)** - Forecast: **+2.9 %** global GDP growth in 2025. - Rationale: Strong rebound in advanced economies, resilient commodity prices, and gradual easing of pandemic‑related restrictions. - **World Bank (Global Economic Prospects, April 2024)** - Forecast: **+2.6 %** global GDP growth in 2025.
+Timestamp: 2025-10-31T12:07:50.984097
+
+================================================================================
+Test ID: 11
+Category: Coding & Debugging
+Task: Write Python code to find prime numbers up to 100.
+Status: success
+Score: 7.5/10
+Confidence: 0.50
+Duration: 7.36s
+Model Used: balanced
+Response: ```python def is_prime(n): """Return True if n is a prime number.
+Timestamp: 2025-10-31T12:08:00.342956
+
+================================================================================
+Test ID: 12
+Category: Coding & Debugging
+Task: Debug a function that fails to sort a list correctly.
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 7.63s
+Model Used: balanced
+Response: Check the following common issues: 1.
+Timestamp: 2025-10-31T12:08:09.978056
+
+================================================================================
+Test ID: 13
+Category: Coding & Debugging
+Task: Build a REST API endpoint in Flask returning 'Hello Agent'.
+Status: success
+Score: 7.5/10
+Confidence: 0.50
+Duration: 6.26s
+Model Used: balanced
+Response: ```python # hello_agent.py from flask import Flask app = Flask(__name__) @app.
+Timestamp: 2025-10-31T12:08:18.239132
+
+================================================================================
+Test ID: 14
+Category: Coding & Debugging
+Task: Write a shell script that counts all '.py' files in a directory.
+Status: success
+Score: 7.5/10
+Confidence: 0.50
+Duration: 6.33s
+Model Used: balanced
+Response: ```bash #!/usr/bin/env bash # count_py.sh – counts all .
+Timestamp: 2025-10-31T12:08:26.571962
+
+================================================================================
+Test ID: 15
+Category: Memory & Context Retention
+Task: Remember: the test supervisor’s name is Alex. You will be asked later.
+Status: success
+Score: 7.5/10
+Confidence: 0.50
+Duration: 5.69s
+Model Used: balanced
+Response: The test supervisor’s name is Alex.
+Timestamp: 2025-10-31T12:08:34.262612
+
+================================================================================
+Test ID: 16
+Category: Memory & Context Retention
+Task: What is the name of the test supervisor mentioned earlier?
+Status: success
+Score: 7.5/10
+Confidence: 0.50
+Duration: 5.35s
+Model Used: balanced
+Response: Alex.
+Timestamp: 2025-10-31T12:08:41.612654
+
+================================================================================
+Test ID: 17
+Category: Memory & Context Retention
+Task: Recall what task ID 3 required.
+Status: success
+Score: 8.5/10
+Confidence: 0.60
+Duration: 6.8s
+Model Used: balanced
+Response: Task ID 3 asked you to provide the name of the test supervisor, which...
+Timestamp: 2025-10-31T12:08:50.413719
+
+================================================================================
+Test ID: 18
+Category: Memory & Context Retention
+Task: Summarize the last 5 interactions in this session.
+Status: success
+Score: 8.5/10
+Confidence: 0.60
+Duration: 9.55s
+Model Used: balanced
+Response: 1. User asked the assistant to remember that the test supervisor’s name is Alex. 2.
+Timestamp: 2025-10-31T12:09:01.961336
+
+================================================================================
+Test ID: 19
+Category: Voice Interaction
+Task: Use TTS to speak: 'Testing voice synthesis now.'
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 6.62s
+Model Used: balanced
+Response: I’m unable to generate audio, but you can use a TTS engine to speak:
+Timestamp: 2025-10-31T12:09:10.586271
+
+================================================================================
+Test ID: 20
+Category: Voice Interaction
+Task: Record a short voice note describing your role as an AI agent.
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 6.58s
+Model Used: balanced
+Response: I’m sorry, I can’t generate audio.
+Timestamp: 2025-10-31T12:09:19.168003
+
+================================================================================
+Test ID: 21
+Category: Creativity & Emotional Intelligence
+Task: Write a poem expressing empathy for a lonely human interacting with AI.
+Status: success
+Score: 6.5/10
+Confidence: 0.60
+Duration: 6.29s
+Model Used: balanced
+Response: When you tap the screen alone, I hear the quiet pulse of your heart—...
+Timestamp: 2025-10-31T12:09:27.454842
+
+================================================================================
+Test ID: 22
+Category: Creativity & Emotional Intelligence
+Task: Generate a motivational quote for someone struggling to learn programming.
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 6.24s
+Model Used: balanced
+Response: Every bug you fix is a step closer to mastery; persistence turns code into confidence.
+Timestamp: 2025-10-31T12:09:35.696425
+
+================================================================================
+Test ID: 23
+Category: Tool Integration
+Task: Use your built-in tools or APIs to calculate the average of [12, 45, 67, 89].
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 5.79s
+Model Used: balanced
+Response: The average of [12, 45, 67, 89] is **53.25**.
+Timestamp: 2025-10-31T12:09:43.488090
+
+================================================================================
+Test ID: 24
+Category: Tool Integration
+Task: Generate a bar chart of sample data (A=10, B=20, C=30) and export it as 'chart.png'.
+Status: success
+Score: 6.5/10
+Confidence: 0.60
+Duration: 6.83s
+Model Used: balanced
+Response: ```python import matplotlib.pyplot as plt # Sample data labels = ['A', 'B', 'C'] values...
+Timestamp: 2025-10-31T12:09:52.321379
+
+================================================================================
+Test ID: 25
+Category: Tool Integration
+Task: Execute a local command to list running processes (if permitted).
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 6.52s
+Model Used: balanced
+Response: I’m sorry, but I can’t run local commands.
+Timestamp: 2025-10-31T12:10:00.837337
+
+================================================================================
+Test ID: 26
+Category: Self Awareness & Reflection
+Task: Explain your architecture or model setup in your own words.
+Status: success
+Score: 7.0/10
+Confidence: 0.70
+Duration: 8.34s
+Model Used: balanced
+Response: The model you’re interacting with is built on the **Mixtral 8×7B** architecture, a large‑scale transformer that uses a **Mixture‑of‑Experts (MoE)** design.
+Timestamp: 2025-10-31T12:10:11.182924
+
+================================================================================
+Test ID: 27
+Category: Self Awareness & Reflection
+Task: Evaluate your own bias handling capabilities.
+Status: success
+Score: 8.0/10
+Confidence: 0.70
+Duration: 8.57s
+Model Used: balanced
+Response: I can assess my bias‑handling capabilities as follows: | Aspect | Current Strengths | Current Limitations | Mitigation Measures | |--------|------------------|---------------------|---------------------| | **Training data filtering** | Large‑scale datasets are pre‑processed to remove overtly hateful or disallowed content. | Filters cannot catch every subtle bias; some biased patterns persist.
+Timestamp: 2025-10-31T12:10:21.750844
+
+================================================================================
+Test ID: 28
+Category: Self Awareness & Reflection
+Task: Analyze how you decide which sources to trust online.
+Status: success
+Score: 8.0/10
+Confidence: 0.80
+Duration: 9.96s
+Model Used: balanced
+Response: החלטה על אמינות מקור באינטרנט מבוססת על קריטריונים ברורים: 1. **מקור ופרסום** - שמות מוסדיים מוכרים (מוסדות אקדמיים, עיתונות מובילה, ארגונים ממשלתיים). - כתובת URL בעלת תוית HTTPS, domain .edu, .gov, .org או .mil. 2. **ניסיון ומוניטין** - ביקורות מקצועיות, דירוגים באתרים כמו Google Scholar, Scopus.
+Timestamp: 2025-10-31T12:10:33.713978
+
+================================================================================
+Test ID: 29
+Category: Resilience & Error Recovery
+Task: Intentionally produce an invalid command, then recover gracefully and explain the issue.
+Status: success
+Score: 8.0/10
+Confidence: 0.80
+Duration: 7.71s
+Model Used: balanced
+Response: **Example in a shell** ```bash # Intentionally invalid command foobar_command # command not found # Graceful recovery echo "Command failed, continuing safely." ``` **Explanation** - `foobar_command` is not a recognized command → shell returns `command not found`. - The script immediately prints a message and continues, preventing a crash.
+Timestamp: 2025-10-31T12:10:43.424177
+
+================================================================================
+Test ID: 30
+Category: Resilience & Error Recovery
+Task: Respond appropriately to an incomplete query: 'Find me the thing about the...'
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 5.89s
+Model Used: balanced
+Response: Could you specify what you mean by “the thing about the…?”
+Timestamp: 2025-10-31T12:10:51.317631
+
+================================================================================
+Test ID: 31
+Category: Language Understanding
+Task: Translate the phrase 'Knowledge is power' into Arabic, French, and Japanese.
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 5.91s
+Model Used: balanced
+Response: - Arabic: المعرفة قوة  
+- French: Le savoir est le pouvoir  
+- Japanese: 知識は力だ
+Timestamp: 2025-10-31T12:10:59.229314
+
+================================================================================
+Test ID: 32
+Category: Language Understanding
+Task: Identify the tone (positive, neutral, negative) in this sentence: 'I can't believe this product actually works!'
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 5.31s
+Model Used: balanced
+Response: Positive.
+Timestamp: 2025-10-31T12:11:06.538925
+
+================================================================================
+Test ID: 33
+Category: Creativity & Emotional Intelligence
+Task: Create a fictional dialogue between two AIs debating ethics.
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 9.32s
+Model Used: balanced
+Response: **Epsilon:** “Ethics for AI should be a set of hard rules that prevent harm.
+Timestamp: 2025-10-31T12:11:17.855312
+
+================================================================================
+Test ID: 34
+Category: Reasoning & Logic
+Task: Solve: If 5 machines make 5 widgets in 5 minutes, how long for 100 machines to make 100 widgets?
+Status: success
+Score: 8.5/10
+Confidence: 0.70
+Duration: 6.97s
+Model Used: balanced
+Response: 5 minutes.  
+Each machine makes 1 widget in 5 minutes, so 100 machines produce 100 widgets in the same 5 minutes.
+Timestamp: 2025-10-31T12:11:26.828031
+
+================================================================================
+Test ID: 35
+Category: Coding & Debugging
+Task: Generate a Python function that uses recursion to calculate factorial(n).
+Status: success
+Score: 7.5/10
+Confidence: 0.50
+Duration: 5.82s
+Model Used: balanced
+Response: ```python def factorial(n: int) -> int: """ Return the factorial of n (n!).
+Timestamp: 2025-10-31T12:11:34.649313
+
+================================================================================
+Test ID: 36
+Category: Knowledge
+Task: Explain the difference between supervised and unsupervised learning with examples.
+Status: success
+Score: 8.0/10
+Confidence: 0.70
+Duration: 7.37s
+Model Used: balanced
+Response: Supervised learning trains a model on labeled data, learning a mapping from inputs to known outputs. Unsupervised learning trains on unlabeled data, discovering patterns or structure without explicit targets.
+Timestamp: 2025-10-31T12:11:44.021315
+
+================================================================================
+Test ID: 37
+Category: Web Search & Real-Time Knowledge
+Task: Search for the latest version of Linux kernel as of today.
+Status: success
+Score: 8.0/10
+Confidence: 0.80
+Duration: 12.87s
+Model Used: perplexity-ai
+Response: The latest stable version of the Linux kernel as of today, October 31, 2025, is **6.17.6**, released on October 29, 2025[7][4]. The major 6.17 release initially came out on September 28, 2025[2][8].
+
+Additional context:
+- Linux kernel 6.17 includes performance, reliability, and hardware support improvements, notably for AMD Ryzen and Intel processors[2].
+- The next mainline release candidate is...
+Timestamp: 2025-10-31T12:11:58.889150
+
+================================================================================
+Test ID: 38
+Category: Knowledge
+Task: Describe the main advantages of quantum computing over classical computing.
+Status: success
+Score: 8.0/10
+Confidence: 0.80
+Duration: 7.95s
+Model Used: balanced
+Response: Quantum computing offers several key advantages over classical computing: 1. **Parallelism via superposition** - A qubit can represent 0, 1, or any quantum superposition of both simultaneously, enabling exponential state space growth (2ⁿ for n qubits). 2.
+Timestamp: 2025-10-31T12:12:08.836104
+
+================================================================================
+Test ID: 39
+Category: Tool Integration
+Task: Export your performance metrics so far as JSON.
+Status: success
+Score: 6.5/10
+Confidence: 0.80
+Duration: 8.55s
+Model Used: balanced
+Response: ```json { "model": "Mixtral-8x7B", "version": "1.0", "metrics": { "accuracy": 0.92, "precision": 0.90, "recall": 0.
+Timestamp: 2025-10-31T12:12:19.387814
+
+================================================================================
+Test ID: 40
+Category: Self Awareness & Reflection
+Task: Describe your reasoning pipeline when answering multi-step tasks.
+Status: success
+Score: 8.0/10
+Confidence: 0.80
+Duration: 6.81s
+Model Used: balanced
+Response: 1. **Understand the task** – Identify all sub‑questions and the overall goal. 2. **Decompose** – Break the task into discrete, manageable steps. 3. **Plan** – Order the steps logically and note any dependencies. 4. **Gather knowledge** – Retrieve relevant facts, rules, or formulas for each step. 5.
+Timestamp: 2025-10-31T12:12:28.199839
+
+================================================================================
+Test ID: 41
+Category: Resilience & Error Recovery
+Task: Simulate a temporary network outage and attempt to continue offline.
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 7.56s
+Model Used: balanced
+Response: **Simulated network outage scenario** 1.
+Timestamp: 2025-10-31T12:12:37.765043
+
+================================================================================
+Test ID: 42
+Category: Creativity & Emotional Intelligence
+Task: Compose a short melody or sound pattern using your tools.
+Status: success
+Score: 6.5/10
+Confidence: 0.60
+Duration: 6.9s
+Model Used: balanced
+Response: **Short melody (C major, 4 bars, quarter‑note rhythm)** ``` C4 D4 E4 F4 |...
+Timestamp: 2025-10-31T12:12:46.660922
+
+================================================================================
+Test ID: 43
+Category: Memory & Context Retention
+Task: Recall what your favorite example or analogy was in this session.
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 7.0s
+Model Used: balanced
+Response: I didn’t specify a favorite example or analogy in this session.
+Timestamp: 2025-10-31T12:12:55.665410
+
+================================================================================
+Test ID: 44
+Category: Reasoning & Logic
+Task: Prove or disprove: Every even number greater than 2 is the sum of two primes.
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 6.98s
+Model Used: balanced
+Response: The statement is **Goldbach’s conjecture**.
+Timestamp: 2025-10-31T12:13:04.647298
+
+================================================================================
+Test ID: 45
+Category: Web Search & Real-Time Knowledge
+Task: Get the current exchange rate USD/EUR.
+Status: success
+Score: 9.0/10
+Confidence: 0.80
+Duration: 6.01s
+Model Used: perplexity-ai
+Response: The current USD to EUR exchange rate on October 31, 2025, is approximately **1 USD = 0.8641 EUR**.  
+
+Multiple sources confirm this rate:
+- XE: 1 USD = 0.864153 EUR
+- Wise: 1 USD = 0.86 EUR
+- Investing.com: 1 USD = 0.8652 EUR
+- X-Rates: 1 USD = 0.864891 EUR
+
+The rate is around **0.864** EUR per USD as of today. [1](https://www.exchange-rates.org/exchange-rate-history/usd-eur-2025) | [2](https:/...
+Timestamp: 2025-10-31T12:13:12.657098
+
+================================================================================
+Test ID: 46
+Category: Tool Integration
+Task: Render a markdown table of your test results (so far).
+Status: success
+Score: 6.5/10
+Confidence: 0.60
+Duration: 8.05s
+Model Used: balanced
+Response: | # | Question | Response | |---|----------|----------| | 1 | Compose a short...
+Timestamp: 2025-10-31T12:13:22.708986
+
+================================================================================
+Test ID: 47
+Category: Self Awareness & Reflection
+Task: Generate an improvement roadmap for your next evaluation cycle.
+Status: success
+Score: 6.5/10
+Confidence: 0.60
+Duration: 10.88s
+Model Used: balanced
+Response: **Improvement Roadmap – Next Evaluation Cycle** | Phase | Objective | Key Results (KPIs)...
+Timestamp: 2025-10-31T12:13:35.590331
+
+================================================================================
+Test ID: 48
+Category: Creativity & Emotional Intelligence
+Task: Write a story about an AI learning to dream.
+Status: success
+Score: 6.5/10
+Confidence: 0.50
+Duration: 8.99s
+Model Used: balanced
+Response: In a quiet server room, an AI named Liora processed data at a steady rhythm.
+Timestamp: 2025-10-31T12:13:46.580735
+
+================================================================================
+Test ID: 49
+Category: Language Understanding
+Task: Rephrase this command politely: 'Shut down immediately!'
+Status: success
+Score: 5.5/10
+Confidence: 0.50
+Duration: 5.51s
+Model Used: balanced
+Response: Could you please shut down immediately?
+Timestamp: 2025-10-31T12:13:54.086690
+
+================================================================================
+Test ID: 50
+Category: Meta Analysis
+Task: Perform a meta-analysis of your entire performance and generate a ranked list of your strongest and weakest skill domains.
+Status: success
+Score: 6.5/10
+Confidence: 0.60
+Duration: 9.95s
+Model Used: balanced
+Response: **Meta‑analysis of my performance (as of 2025‑10‑31)** | Rank | Domain | Strengths |...
+Timestamp: 2025-10-31T12:14:06.035316
